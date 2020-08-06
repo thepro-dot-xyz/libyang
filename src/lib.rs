@@ -39,7 +39,6 @@ impl Yang {
                         if let Some(os_str) = entry.path().file_name() {
                             if let Some(file_str) = os_str.to_str() {
                                 if file_str == name {
-                                    println!("Found!");
                                     return Ok(entry.path());
                                 }
                                 if let None = name.find('@') {
@@ -59,12 +58,16 @@ impl Yang {
         if candidate.len() == 0 {
             return Err(Error::new(ErrorKind::Other, "can't find file"));
         }
-        // let _file = File::open(&candidate[0]);
+
+        // When the specified file is not found by exact match, directories are
+        // scanned for "name@revision-date.yang" files, the latest (sorted by
+        // YYYY-MM-DD revision-date) of candidates will be selected.
+        candidate.sort();
 
         Ok(candidate.pop().unwrap())
     }
 
-    pub fn find_file(&self, name: &str) -> Result<(), Error> {
+    pub fn find_file(&self, name: &str) -> Result<File, Error> {
         let mut file_path = PathBuf::from(name);
 
         // Find slash in name.
@@ -78,11 +81,28 @@ impl Yang {
             }
         }
         println!("result file_path {:?}", file_path);
+        println!("result file_parent {:?}", file_path.parent());
 
         // If file has path, add the path to paths.
-        let _fd = File::open(file_path);
-
-        Ok(())
+        match File::open(&file_path) {
+            Ok(file) => {
+                // let parent = file_path.parent();
+                // match parent {
+                //     Some(p) => {
+                //         println!("path {:?}", p.to_str().unwrap());
+                //         self.add_path(p.to_str().unwrap());
+                //     }
+                //     None => {}
+                // }
+                return Ok(file);
+            }
+            Err(_) => {
+                if let Some(_) = name.find('/') {
+                    return Err(Error::new(ErrorKind::Other, "can't find file"));
+                }
+            }
+        }
+        Err(Error::new(ErrorKind::Other, "can't find file"))
     }
 
     pub fn read(&self, _ms: &Modules, name: &str) -> Result<(), Error> {
