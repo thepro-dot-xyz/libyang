@@ -5,7 +5,7 @@ use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
 pub struct Yang {
-    paths: Vec<&'static str>,
+    paths: Vec<PathBuf>,
 }
 
 pub struct Modules {}
@@ -16,13 +16,13 @@ impl Yang {
     }
 
     // Add colon ':' separated path to YANG file load paths.
-    pub fn add_path(&mut self, paths: &'static str) {
+    pub fn add_path(&mut self, paths: &str) {
         for path in paths.split(":") {
-            self.paths.push(path);
+            self.paths.push(PathBuf::from(path));
         }
     }
 
-    pub fn paths(&self) -> &Vec<&'static str> {
+    pub fn paths(&self) -> &Vec<PathBuf> {
         &self.paths
     }
 
@@ -67,7 +67,7 @@ impl Yang {
         Ok(candidate.pop().unwrap())
     }
 
-    pub fn find_file(&self, name: &str) -> Result<File, Error> {
+    pub fn find_file(&mut self, name: &str) -> Result<File, Error> {
         let mut file_path = PathBuf::from(name);
 
         // Find slash in name.
@@ -86,14 +86,10 @@ impl Yang {
         // If file has path, add the path to paths.
         match File::open(&file_path) {
             Ok(file) => {
-                // let parent = file_path.parent();
-                // match parent {
-                //     Some(p) => {
-                //         println!("path {:?}", p.to_str().unwrap());
-                //         self.add_path(p.to_str().unwrap());
-                //     }
-                //     None => {}
-                // }
+                // When file_path have parent directory, push it to paths.
+                if file_path.pop() {
+                    self.paths.push(file_path);
+                }
                 return Ok(file);
             }
             Err(_) => {
@@ -105,7 +101,7 @@ impl Yang {
         Err(Error::new(ErrorKind::Other, "can't find file"))
     }
 
-    pub fn read(&self, _ms: &Modules, name: &str) -> Result<(), Error> {
+    pub fn read(&mut self, _ms: &Modules, name: &str) -> Result<(), Error> {
         // Find file.
         let _file = self.find_file(name)?;
 
@@ -135,9 +131,13 @@ mod tests {
         yang.add_path("/etc/openconfigd/yang:/opt/zebra/yang");
         yang.add_path("/var/yang");
 
-        let paths = ["/etc/openconfigd/yang", "/opt/zebra/yang", "/var/yang"];
+        let paths = vec![
+            PathBuf::from("/etc/openconfigd/yang"),
+            PathBuf::from("/opt/zebra/yang"),
+            PathBuf::from("/var/yang"),
+        ];
 
-        assert_eq!(yang.paths, paths);
+        assert_eq!(yang.paths(), &paths);
     }
 
     #[test]
@@ -146,6 +146,6 @@ mod tests {
         yang.add_path("/etc/openconfigd/yang:/opt/zebra/yang");
 
         let ms = Modules::new();
-        yang.read(&ms, "coreswitch").unwrap();
+        yang.read(&ms, "./tests/coreswitch").unwrap();
     }
 }
