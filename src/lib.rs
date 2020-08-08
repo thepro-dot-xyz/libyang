@@ -67,37 +67,35 @@ impl Yang {
         Ok(candidate.pop().unwrap())
     }
 
-    pub fn find_file(&mut self, name: &str) -> Result<File, Error> {
-        let mut file_path = PathBuf::from(name);
+    pub fn find_file(&mut self, file_name: &str) -> Result<File, Error> {
+        let mut file_path = PathBuf::from(file_name);
 
         // Find slash in name.
-        if let None = name.find('/') {
-            let mut file_name = String::from(name);
-            if !file_name.ends_with(".yang") {
-                file_name = String::from(name) + ".yang";
+        if let None = file_name.find('/') {
+            let mut file_str = String::from(file_name);
+            if !file_str.ends_with(".yang") {
+                file_str = String::from(file_name) + ".yang";
             }
-            if let Ok(v) = self.scan_dir(".", &file_name, false) {
+            if let Ok(v) = self.scan_dir(".", &file_str, false) {
                 file_path = v
             }
         }
-        println!("result file_path {:?}", file_path);
-        println!("result file_parent {:?}", file_path.parent());
 
-        // If file has path, add the path to paths.
         match File::open(&file_path) {
             Ok(file) => {
-                // When file_path have parent directory, push it to paths.
+                // When file can be opened and has a path, add the path to paths.
                 if file_path.pop() {
                     self.paths.push(file_path);
                 }
                 return Ok(file);
             }
             Err(_) => {
-                if let Some(_) = name.find('/') {
+                if let Some(_) = file_name.find('/') {
                     return Err(Error::new(ErrorKind::Other, "can't find file"));
                 }
             }
         }
+
         Err(Error::new(ErrorKind::Other, "can't find file"))
     }
 
