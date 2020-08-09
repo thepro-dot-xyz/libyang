@@ -137,7 +137,7 @@ impl Yang {
         Ok(contents)
     }
 
-    pub fn read(&mut self, _ms: &Modules, name: &str) -> Result<(), Error> {
+    pub fn read(&mut self, _ms: &Modules, name: &str) -> Result<String, Error> {
         // Find and open file.
         let file = self.find_file(name)?;
 
@@ -145,10 +145,9 @@ impl Yang {
         let data = self.read_file(file)?;
 
         // Parse file.
-        println!("Data: {}", data);
         // let ast = parse_data(data)?;
 
-        Ok(())
+        Ok(data)
     }
 }
 

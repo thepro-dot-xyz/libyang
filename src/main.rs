@@ -8,5 +8,7 @@ fn main() {
 
     // Read a module "ietf-dhcp".
     let ms = Modules::new();
-    yang.read(&ms, "ietf-inet-types").unwrap();
+    let data = yang.read(&ms, "ietf-inet-types").unwrap();
+
+    println!("{}", data);
 }
