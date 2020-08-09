@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
@@ -26,7 +27,7 @@ impl Yang {
         &self.paths
     }
 
-    pub fn scan_dir(&self, dir: &str, name: &str, _recur: bool) -> Result<PathBuf, Error> {
+    pub fn scan_dir(&self, dir: &str, name: &str, recursive: bool) -> Result<PathBuf, Error> {
         let mut candidate = vec![];
         let mut basename = String::from(name.trim_end_matches(".yang"));
         basename.push_str("@");
@@ -36,6 +37,7 @@ impl Yang {
             if let Ok(entry) = entry {
                 if let Ok(file_type) = entry.file_type() {
                     if file_type.is_file() {
+                        // File.
                         if let Some(os_str) = entry.path().file_name() {
                             if let Some(file_str) = os_str.to_str() {
                                 if file_str == name {
@@ -51,12 +53,22 @@ impl Yang {
                                 }
                             }
                         }
+                    } else if file_type.is_dir() && recursive {
+                        // Directory.
+                        if let Some(dir_str) = entry.path().to_str() {
+                            if let Ok(pathbuf) = self.scan_dir(dir_str, name, recursive) {
+                                return Ok(pathbuf);
+                            }
+                        }
                     }
                 }
             }
         }
         if candidate.len() == 0 {
-            return Err(Error::new(ErrorKind::Other, "can't find file"));
+            return Err(Error::new(
+                ErrorKind::Other,
+                "can't find candidate YANG file",
+            ));
         }
 
         // When the specified file is not found by exact match, directories are
@@ -92,6 +104,15 @@ impl Yang {
             Err(_) => {
                 if let Some(_) = file_name.find('/') {
                     return Err(Error::new(ErrorKind::Other, "can't find file"));
+                }
+            }
+        }
+
+        for path in self.paths() {
+            if path.file_name() == Some(OsStr::new("...")) {
+                let mut dir = path.clone();
+                if dir.pop() {
+                    println!("dir {:?}", dir);
                 }
             }
         }
@@ -138,12 +159,12 @@ mod tests {
         assert_eq!(yang.paths(), &paths);
     }
 
-    #[test]
-    fn module_read() {
-        let mut yang = Yang::new();
-        yang.add_path("/etc/openconfigd/yang:/opt/zebra/yang");
+    // #[test]
+    // fn module_read() {
+    //     let mut yang = Yang::new();
+    //     yang.add_path("/etc/openconfigd/yang:/opt/zebra/yang:./tests/...");
 
-        let ms = Modules::new();
-        yang.read(&ms, "./tests/coreswitch").unwrap();
-    }
+    //     let ms = Modules::new();
+    //     yang.read(&ms, "coreswitch").unwrap();
+    // }
 }
