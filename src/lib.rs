@@ -2,7 +2,8 @@
 
 use std::ffi::OsStr;
 use std::fs::{self, File};
-use std::io::{Error, ErrorKind};
+use std::io::prelude::*;
+use std::io::{BufReader, Error, ErrorKind};
 use std::path::PathBuf;
 
 pub struct Yang {
@@ -29,6 +30,12 @@ impl Yang {
 
     pub fn scan_dir(&self, dir: &str, name: &str, recursive: bool) -> Result<PathBuf, Error> {
         let mut candidate = vec![];
+
+        let mut file_name = String::from(name);
+        if !file_name.ends_with(".yang") {
+            file_name.push_str(".yang");
+        }
+
         let mut basename = String::from(name.trim_end_matches(".yang"));
         basename.push_str("@");
 
@@ -40,7 +47,7 @@ impl Yang {
                         // File.
                         if let Some(os_str) = entry.path().file_name() {
                             if let Some(file_str) = os_str.to_str() {
-                                if file_str == name {
+                                if file_str == file_name {
                                     return Ok(entry.path());
                                 }
                                 if let None = name.find('@') {
@@ -82,14 +89,10 @@ impl Yang {
     pub fn find_file(&mut self, file_name: &str) -> Result<File, Error> {
         let mut file_path = PathBuf::from(file_name);
 
-        // Find slash in name.
+        // When file does not have path, scan current dir.
         if let None = file_name.find('/') {
-            let mut file_str = String::from(file_name);
-            if !file_str.ends_with(".yang") {
-                file_str = String::from(file_name) + ".yang";
-            }
-            if let Ok(v) = self.scan_dir(".", &file_str, false) {
-                file_path = v
+            if let Ok(fp) = self.scan_dir(".", file_name, false) {
+                file_path = fp;
             }
         }
 
@@ -112,22 +115,37 @@ impl Yang {
             if path.file_name() == Some(OsStr::new("...")) {
                 let mut dir = path.clone();
                 if dir.pop() {
-                    println!("dir {:?}", dir);
+                    if let Some(dir_str) = dir.to_str() {
+                        if let Ok(fp) = self.scan_dir(dir_str, file_name, true) {
+                            file_path = fp;
+                        }
+                    }
                 }
+            } else {
+                let mut dir = path.clone();
+                dir.push(file_name);
+                file_path = dir;
             }
         }
+        return File::open(&file_path);
+    }
 
-        Err(Error::new(ErrorKind::Other, "can't find file"))
+    pub fn read_file(&self, file: File) -> Result<String, Error> {
+        let mut buf_reader = BufReader::new(file);
+        let mut contents = String::new();
+        buf_reader.read_to_string(&mut contents)?;
+        Ok(contents)
     }
 
     pub fn read(&mut self, _ms: &Modules, name: &str) -> Result<(), Error> {
-        // Find file.
-        let _file = self.find_file(name)?;
+        // Find and open file.
+        let file = self.find_file(name)?;
 
         // Read file contents.
-        // let data = read_file(file)?;
+        let data = self.read_file(file)?;
 
-        // // Parse file.
+        // Parse file.
+        println!("Data: {}", data);
         // let ast = parse_data(data)?;
 
         Ok(())
