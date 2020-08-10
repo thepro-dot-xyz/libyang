@@ -1,10 +1,12 @@
 use libyang::{Modules, Yang};
 
-use escape8259::unescape;
+// use escape8259::unescape;
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while, take_while1};
+use nom::bytes::complete::{tag, take_while, take_while1, take_while_m_n};
 use nom::character::complete::{anychar, char, multispace0, multispace1};
-use nom::combinator::{map_res, recognize, verify};
+// use nom::character::is_digit;
+// use nom::combinator::{map_res, recognize, verify};
+use nom::combinator::{recognize, verify};
 use nom::multi::{many0, many1};
 use nom::sequence::{delimited, pair};
 use nom::IResult;
@@ -70,6 +72,29 @@ fn double_quoted_string(s: &str) -> IResult<&str, &str> {
     delimited(tag("\""), string_body, tag("\""))(s)
 }
 
+fn revision_date_parse(s: &str) -> IResult<&str, &str> {
+    // YYYY-MM-DD format.
+    let (s, year) = take_while_m_n(4, 4, |c: char| c.is_ascii_digit())(s)?;
+    let (s, _) = char('-')(s)?;
+    let (s, month) = take_while_m_n(2, 2, |c: char| c.is_ascii_digit())(s)?;
+    let (s, _) = char('-')(s)?;
+    let (s, day) = take_while_m_n(2, 2, |c: char| c.is_ascii_digit())(s)?;
+    println!("revision parsed: {}-{}-{}", year, month, day);
+    Ok((s, ""))
+}
+
+fn revision_date_quoted_parse(s: &str) -> IResult<&str, &str> {
+    // Quoted "YYYY-MM-DD" format.
+    let (s, _) = char('"')(s)?;
+    let (s, o) = revision_date_parse(s)?;
+    let (s, _) = char('"')(s)?;
+    Ok((s, o))
+}
+
+fn revision_date_token_parse(s: &str) -> IResult<&str, &str> {
+    alt((revision_date_parse, revision_date_quoted_parse))(s)
+}
+
 fn module_parse(s: &str) -> IResult<&str, &str> {
     let (s, _) = multispace0(s)?;
     let (s, m) = alt((
@@ -111,13 +136,21 @@ fn main() {
     println!("{}", data);
 
     match yang_parse(&data) {
-        Ok((i, o)) => {
+        Ok((_, o)) => {
             println!("Module {:?} parse success", o);
         }
         Err(e) => {
             println!("module parse: {:?}", e);
         }
     }
+
+    let revision = "2020-08-10";
+    println!("{:?}", revision_date_parse(revision));
+    let revision_q = "\"2020-08-10\"";
+    println!("{:?}", revision_date_quoted_parse(revision_q));
+
+    println!("{:?}", revision_date_token_parse(revision));
+    println!("{:?}", revision_date_token_parse(revision_q));
 
     // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
     // println!("{}", literal);
