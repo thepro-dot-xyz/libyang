@@ -12,6 +12,23 @@ pub struct Yang {
 
 pub struct Modules {}
 
+#[derive(Default, Debug)]
+pub struct Revision {
+    pub name: String,
+    pub description: String,
+    pub reference: String,
+}
+
+#[derive(Default, Debug)]
+pub struct Module {
+    pub name: String,
+    pub namespace: String,
+    pub prefix: String,
+    pub organization: String,
+    pub contact: String,
+    pub description: String,
+}
+
 impl Yang {
     pub fn new() -> Self {
         Yang { paths: vec![] }

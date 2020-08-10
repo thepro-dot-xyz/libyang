@@ -1,4 +1,4 @@
-use libyang::{Modules, Yang};
+use libyang::{Module, Modules, Yang};
 
 // use escape8259::unescape;
 use nom::branch::alt;
@@ -95,21 +95,43 @@ fn revision_date_token_parse(s: &str) -> IResult<&str, &str> {
     alt((revision_date_parse, revision_date_quoted_parse))(s)
 }
 
-fn module_parse(s: &str) -> IResult<&str, &str> {
+fn revision_sub_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
-    let (s, m) = alt((
+    let (s, k) = alt((tag("description"), tag("reference")))(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    Ok((s, (k, v)))
+}
+
+fn revision_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = tag("revision")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = revision_date_token_parse(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(revision_sub_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, (k, v)))
+}
+
+fn module_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = alt((
         tag("namespace"),
         tag("prefix"),
         tag("organization"),
         tag("contact"),
         tag("description"),
     ))(s)?;
-    println!("keyword: {}", m);
     let (s, _) = multispace1(s)?;
-    let (s, o) = double_quoted_string(s)?;
+    let (s, v) = double_quoted_string(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
-    Ok((s, o))
+    Ok((s, (k, v)))
 }
 
 fn yang_parse(s: &str) -> IResult<&str, &str> {
@@ -118,9 +140,34 @@ fn yang_parse(s: &str) -> IResult<&str, &str> {
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, _) = many1(module_parse)(s)?;
+    let (s, vec) = many1(alt((module_parse, revision_parse)))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
+
+    let mut module = Module::default();
+    module.name = String::from(ident);
+    for (k, v) in vec {
+        match k {
+            "namespace" => {
+                module.namespace = String::from(v);
+            }
+            "prefix" => {
+                module.prefix = String::from(v);
+            }
+            "organization" => {
+                module.organization = String::from(v);
+            }
+            "contact" => {
+                module.contact = String::from(v);
+            }
+            "description" => {
+                module.description = String::from(v);
+            }
+            _ => {}
+        }
+    }
+    println!("{:?}", module);
+    println!("{}", module.description);
     Ok((s, ident))
 }
 
@@ -128,12 +175,12 @@ fn main() {
     // Allocate a new Yang.
     let mut yang = Yang::new();
     yang.add_path("/etc/openconfigd/yang:tests/...");
-    println!("{:?}", yang.paths());
+    // println!("{:?}", yang.paths());
 
     // Read a module "ietf-dhcp".
     let ms = Modules::new();
     let data = yang.read(&ms, "ietf-inet-types").unwrap();
-    println!("{}", data);
+    // println!("{}", data);
 
     match yang_parse(&data) {
         Ok((_, o)) => {
@@ -144,13 +191,14 @@ fn main() {
         }
     }
 
-    let revision = "2020-08-10";
-    println!("{:?}", revision_date_parse(revision));
-    let revision_q = "\"2020-08-10\"";
-    println!("{:?}", revision_date_quoted_parse(revision_q));
+    // Move to test.
+    // let revision = "2020-08-10";
+    // println!("{:?}", revision_date_parse(revision));
+    // let revision_q = "\"2020-08-10\"";
+    // println!("{:?}", revision_date_quoted_parse(revision_q));
 
-    println!("{:?}", revision_date_token_parse(revision));
-    println!("{:?}", revision_date_token_parse(revision_q));
+    // println!("{:?}", revision_date_token_parse(revision));
+    // println!("{:?}", revision_date_token_parse(revision_q));
 
     // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
     // println!("{}", literal);
