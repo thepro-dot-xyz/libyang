@@ -5,7 +5,7 @@ use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while, take_while1};
 use nom::character::complete::{anychar, char, multispace0, multispace1};
 use nom::combinator::{map_res, recognize, verify};
-use nom::multi::many0;
+use nom::multi::{many0, many1};
 use nom::sequence::{delimited, pair};
 use nom::IResult;
 
@@ -46,7 +46,7 @@ pub fn identifier(s: &str) -> IResult<&str, &str> {
 fn is_nonescaped_string_char(c: char) -> bool {
     let cv = c as u32;
     // 0x22 is double quote and 0x5C is backslash.
-    (cv >= 0x20) && (cv != 0x22) && (cv != 0x5C)
+    (cv == 0x0a) || (cv == 0x0d) || ((cv >= 0x20) && (cv != 0x22) && (cv != 0x5c))
 }
 
 fn nonescaped_string(s: &str) -> IResult<&str, &str> {
@@ -64,27 +64,38 @@ fn string_body(s: &str) -> IResult<&str, &str> {
     recognize(many0(alt((nonescaped_string, escape_code))))(s)
 }
 
-fn double_quoted_string(s: &str) -> IResult<&str, String> {
-    let parser = delimited(tag("\""), string_body, tag("\""));
-    map_res(parser, |x| unescape(x))(s)
-}
-
-#[allow(dead_code)]
-fn namespace_parse(s: &str) -> IResult<&str, &str> {
-    let (s, _) = tag("namespace")(s)?;
-    let (s, _) = multispace1(s)?;
-    // let (s, namespace) = escape(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char(';')(s)?;
-    Ok((s, "x"))
+fn double_quoted_string(s: &str) -> IResult<&str, &str> {
+    // let parser = delimited(tag("\""), string_body, tag("\""));
+    // map_res(parser, |x| unescape(x))(s)
+    delimited(tag("\""), string_body, tag("\""))(s)
 }
 
 fn module_parse(s: &str) -> IResult<&str, &str> {
+    let (s, _) = multispace0(s)?;
+    let (s, m) = alt((
+        tag("namespace"),
+        tag("prefix"),
+        tag("organization"),
+        tag("contact"),
+        tag("description"),
+    ))(s)?;
+    println!("keyword: {}", m);
+    let (s, _) = multispace1(s)?;
+    let (s, o) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    Ok((s, o))
+}
+
+fn yang_parse(s: &str) -> IResult<&str, &str> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
+    let (s, _) = many1(module_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
     Ok((s, ident))
 }
 
@@ -97,40 +108,36 @@ fn main() {
     // Read a module "ietf-dhcp".
     let ms = Modules::new();
     let data = yang.read(&ms, "ietf-inet-types").unwrap();
-
     println!("{}", data);
 
-    let literal = "module ietf-inet-types {";
-
-    match module_parse(literal) {
-        Ok(v) => {
-            println!("{:?}", v);
+    match yang_parse(&data) {
+        Ok((i, o)) => {
+            println!("Module {:?} parse success", o);
         }
         Err(e) => {
-            println!("{:?}", e);
+            println!("module parse: {:?}", e);
         }
     }
 
-    let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
-    println!("{}", literal);
+    // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
+    // println!("{}", literal);
 
-    let literal = r"\na";
-    let result = escape_code(literal);
-    println!("{:?}", result);
+    // let literal = r"\na";
+    // let result = escape_code(literal);
+    // println!("{:?}", result);
 
-    let literal = r#"main-routine_1 "#;
-    let result = nonescaped_string(literal);
-    println!("{:?}", result);
+    // let literal = r#"main-routine_1 "#;
+    // let result = nonescaped_string(literal);
+    // println!("{:?}", result);
 
-    let literal = r#""hoge hoga\n hoge""#;
-    println!("l: {:?}", literal);
-    match double_quoted_string(literal) {
-        Ok((_, o)) => {
-            println!("output: {}", o);
-        }
-        Err(e) => {
-            println!("{}", e);
-        }
-    }
-    //println!("{:?}", v);
+    // let literal = r#""hoge\thoga\nhoge""#;
+    // println!("l: {:?}", literal);
+    // match double_quoted_string(literal) {
+    //     Ok((_, o)) => {
+    //         println!("output: {}", o);
+    //     }
+    //     Err(e) => {
+    //         println!("{}", e);
+    //     }
+    // }
 }
