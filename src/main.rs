@@ -200,7 +200,32 @@ fn enum_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (ident, "")))
 }
 
-fn type_parse(s: &str) -> IResult<&str, (&str, &str)> {
+fn uint8_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = tag("range")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+
+    Ok((s, (k, v)))
+}
+
+fn type_uint8_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, k) = tag("uint8")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(uint8_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, (k, "")))
+}
+
+// enumeration.
+fn type_enumeration_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -231,7 +256,11 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, _) = many0(alt((type_parse, description_reference_parse)))(s)?;
+    let (s, _) = many0(alt((
+        type_enumeration_parse,
+        type_uint8_parse,
+        description_reference_parse,
+    )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
