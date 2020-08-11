@@ -7,7 +7,7 @@ use nom::character::complete::{anychar, char, multispace0, multispace1};
 // use nom::character::is_digit;
 // use nom::combinator::{map_res, recognize, verify};
 use nom::combinator::{recognize, verify};
-use nom::multi::{many0, many1};
+use nom::multi::many0;
 use nom::sequence::{delimited, pair};
 use nom::IResult;
 
@@ -105,6 +105,7 @@ fn revision_sub_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
+// Module:top
 fn revision_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, k) = tag("revision")(s)?;
@@ -118,6 +119,7 @@ fn revision_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
+// Module:top
 fn module_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, k) = alt((
@@ -134,6 +136,7 @@ fn module_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
+// Module:top
 fn c_comment_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("/*")(s)?;
@@ -143,13 +146,110 @@ fn c_comment_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, ("", "")))
 }
 
+// 4.2.4.  Built-In Types
+//
+//    YANG has a set of built-in types, similar to those of many
+//    programming languages, but with some differences due to special
+//    requirements of network management.  The following table summarizes
+//    the built-in types discussed in Section 9:
+//
+//        +---------------------+-------------------------------------+
+//        | Name                | Description                         |
+//        +---------------------+-------------------------------------+
+//        | binary              | Any binary data                     |
+//        | bits                | A set of bits or flags              |
+//        | boolean             | "true" or "false"                   |
+//        | decimal64           | 64-bit signed decimal number        |
+//        | empty               | A leaf that does not have any value |
+//        | enumeration         | One of an enumerated set of strings |
+//        | identityref         | A reference to an abstract identity |
+//        | instance-identifier | A reference to a data tree node     |
+//        | int8                | 8-bit signed integer                |
+//        | int16               | 16-bit signed integer               |
+//        | int32               | 32-bit signed integer               |
+//        | int64               | 64-bit signed integer               |
+//        | leafref             | A reference to a leaf instance      |
+//        | string              | A character string                  |
+//        | uint8               | 8-bit unsigned integer              |
+//        | uint16              | 16-bit unsigned integer             |
+//        | uint32              | 32-bit unsigned integer             |
+//        | uint64              | 64-bit unsigned integer             |
+//        | union               | Choice of member types              |
+//        +---------------------+-------------------------------------+
+fn description_value_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = alt((tag("description"), tag("value")))(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    Ok((s, (k, v)))
+}
+
+fn enum_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("enum")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, ident) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(description_value_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+
+    Ok((s, (ident, "")))
+}
+
+fn type_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, k) = tag("enumeration")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(enum_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, (k, "")))
+}
+
+fn description_reference_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = alt((tag("description"), tag("reference")))(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    Ok((s, (k, v)))
+}
+
+// Module:top
+fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = tag("typedef")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, ident) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(alt((type_parse, description_reference_parse)))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+
+    Ok((s, (k, ident)))
+}
+
 fn yang_parse(s: &str) -> IResult<&str, &str> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, vec) = many1(alt((module_parse, revision_parse, c_comment_parse)))(s)?;
+    let (s, vec) = many0(alt((
+        module_parse,
+        revision_parse,
+        c_comment_parse,
+        typedef_parse,
+    )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
