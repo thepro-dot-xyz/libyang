@@ -2,7 +2,7 @@ use libyang::{Module, Modules, Yang};
 
 // use escape8259::unescape;
 use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while, take_while1, take_while_m_n};
+use nom::bytes::complete::{tag, take_until, take_while, take_while1, take_while_m_n};
 use nom::character::complete::{anychar, char, multispace0, multispace1};
 // use nom::character::is_digit;
 // use nom::combinator::{map_res, recognize, verify};
@@ -134,13 +134,22 @@ fn module_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
+fn c_comment_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("/*")(s)?;
+    let (s, _) = take_until("*/")(s)?;
+    let (s, _) = tag("*/")(s)?;
+    let (s, _) = multispace0(s)?;
+    Ok((s, ("", "")))
+}
+
 fn yang_parse(s: &str) -> IResult<&str, &str> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, vec) = many1(alt((module_parse, revision_parse)))(s)?;
+    let (s, vec) = many1(alt((module_parse, revision_parse, c_comment_parse)))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
@@ -190,6 +199,11 @@ fn main() {
             println!("module parse: {:?}", e);
         }
     }
+
+    // let literal = r#"/*** collection abc*/"#;
+    // let result = c_comment_parse(literal);
+    // println!("{:?}", literal);
+    // println!("{:?}", result);
 
     // Move to test.
     // let revision = "2020-08-10";
