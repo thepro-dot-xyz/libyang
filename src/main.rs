@@ -176,6 +176,38 @@ fn c_comment_parse(s: &str) -> IResult<&str, (&str, &str)> {
 //        | uint64              | 64-bit unsigned integer             |
 //        | union               | Choice of member types              |
 //        +---------------------+-------------------------------------+
+
+#[derive(Debug)]
+enum TypeKind {
+    Ynone,
+    // Yint8,
+    Yenum,
+}
+
+#[derive(Debug)]
+struct YangType {
+    name: String,
+    kind: TypeKind,
+}
+
+impl Default for YangType {
+    fn default() -> Self {
+        Self {
+            name: String::from(""),
+            kind: TypeKind::Ynone,
+        }
+    }
+}
+
+impl YangType {
+    fn new(kind: TypeKind) -> Self {
+        YangType {
+            kind: kind,
+            ..Default::default()
+        }
+    }
+}
+
 fn description_value_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, k) = alt((tag("description"), tag("value")))(s)?;
@@ -248,6 +280,21 @@ fn description_reference_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
+struct EnumType {}
+
+struct EnumItem {
+    name: String,
+    value: String,
+    description: String,
+}
+
+// #[derive(Default, Debug)]
+// pub struct Revision {
+//     pub name: String,
+//     pub description: String,
+//     pub reference: String,
+// }
+
 // Module:top
 fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
@@ -263,6 +310,8 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
+
+    // YangType.
 
     Ok((s, (k, ident)))
 }
@@ -329,6 +378,8 @@ fn main() {
         }
     }
 
+    let ytype = YangType::new(TypeKind::Yenum);
+    println!("{:?}", ytype);
     // let literal = r#"/*** collection abc*/"#;
     // let result = c_comment_parse(literal);
     // println!("{:?}", literal);
