@@ -209,18 +209,48 @@ impl YangType {
 }
 
 pub enum AllNode {
+    EmptyNode,
     ValueNode(Box<ValueNode>),
     DescriptionNode(Box<DescriptionNode>),
+    EnumNode(Box<EnumNode>),
+    EnumerationNode(Box<EnumerationNode>),
 }
 
 pub struct ValueNode {
-    pub nodes: (String,),
+    pub name: String,
+    pub nodes: (),
 }
 
 pub struct DescriptionNode {
-    pub nodes: (String,),
+    pub name: String,
+    pub nodes: (),
 }
 
+pub struct EnumNode {
+    pub name: String,
+    pub nodes: (Vec<AllNode>,),
+}
+
+#[derive(Default)]
+pub struct EnumerationNode {
+    pub name: String,
+    pub nodes: (Vec<AllNode>,),
+    pub min: i32,
+    pub max: i32,
+}
+
+impl EnumerationNode {
+    fn new(nodes: Vec<AllNode>) -> Self {
+        EnumerationNode {
+            name: String::from(""),
+            nodes: (nodes,),
+            min: 0,
+            max: 0,
+        }
+    }
+}
+
+// Single statement 'keyword: "double quoted string";'
 fn single_statement_parse(s: &str, key: String) -> IResult<&str, &str> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag(key.as_str())(s)?;
@@ -234,7 +264,8 @@ fn single_statement_parse(s: &str, key: String) -> IResult<&str, &str> {
 fn description_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, v) = single_statement_parse(s, String::from("description"))?;
     let node = DescriptionNode {
-        nodes: (String::from(v),),
+        name: String::from(v),
+        nodes: (),
     };
     Ok((s, AllNode::DescriptionNode(Box::new(node))))
 }
@@ -242,23 +273,46 @@ fn description_parse(s: &str) -> IResult<&str, AllNode> {
 fn value_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, v) = single_statement_parse(s, String::from("value"))?;
     let node = ValueNode {
-        nodes: (String::from(v),),
+        name: String::from(v),
+        nodes: (),
     };
     Ok((s, AllNode::ValueNode(Box::new(node))))
 }
 
-fn enum_parse(s: &str) -> IResult<&str, (&str, &str)> {
+fn reference_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, v) = single_statement_parse(s, String::from("reference"))?;
+    let node = DescriptionNode {
+        name: String::from(v),
+        nodes: (),
+    };
+    Ok((s, AllNode::DescriptionNode(Box::new(node))))
+}
+
+fn enum_sub_parse(s: &str) -> IResult<&str, Vec<AllNode>> {
+    let (s, _) = char('{')(s)?;
+    let (s, nodes) = many0(alt((description_parse, value_parse)))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, nodes))
+}
+
+fn semicolon_end_parse(s: &str) -> IResult<&str, Vec<AllNode>> {
+    let (s, _) = tag(";")(s)?;
+    Ok((s, vec![]))
+}
+
+fn enum_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("enum")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = char('{')(s)?;
-    let (s, _) = many0(alt((description_parse, value_parse)))(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char('}')(s)?;
-
-    Ok((s, (ident, "")))
+    let (s, sub) = alt((enum_sub_parse, semicolon_end_parse))(s)?;
+    let node = EnumNode {
+        name: String::from(ident),
+        nodes: (sub,),
+    };
+    Ok((s, AllNode::EnumNode(Box::new(node))))
 }
 
 fn uint8_parse(s: &str) -> IResult<&str, (&str, &str)> {
@@ -272,57 +326,39 @@ fn uint8_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
-fn type_uint8_parse(s: &str) -> IResult<&str, (&str, &str)> {
+fn type_uint8_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, k) = tag("uint8")(s)?;
+    let (s, _) = tag("uint8")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
     let (s, _) = many0(uint8_parse)(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
-    Ok((s, (k, "")))
+    Ok((s, AllNode::EmptyNode))
 }
 
-// enumeration.
-fn type_enumeration_parse(s: &str) -> IResult<&str, (&str, &str)> {
+fn type_enumeration_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, k) = tag("enumeration")(s)?;
+    let (s, _) = tag("enumeration")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, _) = many0(enum_parse)(s)?;
+    let (s, enums) = many0(enum_parse)(s)?;
+    // for e in &enums {
+    //     if let AllNode::EnumNode(n) = e {
+    //         println!("{:?}", n.name);
+    //     }
+    // }
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
-    Ok((s, (k, "")))
+
+    let node = EnumerationNode::new(enums);
+
+    Ok((s, AllNode::EnumerationNode(Box::new(node))))
 }
-
-fn description_reference_parse(s: &str) -> IResult<&str, (&str, &str)> {
-    let (s, _) = multispace0(s)?;
-    let (s, k) = alt((tag("description"), tag("reference")))(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, v) = double_quoted_string(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char(';')(s)?;
-    Ok((s, (k, v)))
-}
-
-// struct EnumType {}
-
-// struct EnumItem {
-//     name: String,
-//     value: String,
-//     description: String,
-// }
-
-// #[derive(Default, Debug)]
-// pub struct Revision {
-//     pub name: String,
-//     pub description: String,
-//     pub reference: String,
-// }
 
 // Module:top
 fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
@@ -335,7 +371,8 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = many0(alt((
         type_enumeration_parse,
         type_uint8_parse,
-        description_reference_parse,
+        description_parse,
+        reference_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
