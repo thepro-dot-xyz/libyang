@@ -208,14 +208,43 @@ impl YangType {
     }
 }
 
-fn description_value_parse(s: &str) -> IResult<&str, (&str, &str)> {
+pub enum AllNode {
+    ValueNode(Box<ValueNode>),
+    DescriptionNode(Box<DescriptionNode>),
+}
+
+pub struct ValueNode {
+    pub nodes: (String,),
+}
+
+pub struct DescriptionNode {
+    pub nodes: (String,),
+}
+
+fn single_statement_parse(s: &str, key: String) -> IResult<&str, &str> {
     let (s, _) = multispace0(s)?;
-    let (s, k) = alt((tag("description"), tag("value")))(s)?;
+    let (s, _) = tag(key.as_str())(s)?;
     let (s, _) = multispace1(s)?;
     let (s, v) = double_quoted_string(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
-    Ok((s, (k, v)))
+    Ok((s, v))
+}
+
+fn description_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, v) = single_statement_parse(s, String::from("description"))?;
+    let node = DescriptionNode {
+        nodes: (String::from(v),),
+    };
+    Ok((s, AllNode::DescriptionNode(Box::new(node))))
+}
+
+fn value_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, v) = single_statement_parse(s, String::from("value"))?;
+    let node = ValueNode {
+        nodes: (String::from(v),),
+    };
+    Ok((s, AllNode::ValueNode(Box::new(node))))
 }
 
 fn enum_parse(s: &str) -> IResult<&str, (&str, &str)> {
@@ -225,7 +254,7 @@ fn enum_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, _) = many0(description_value_parse)(s)?;
+    let (s, _) = many0(alt((description_parse, value_parse)))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
@@ -280,13 +309,13 @@ fn description_reference_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
-struct EnumType {}
+// struct EnumType {}
 
-struct EnumItem {
-    name: String,
-    value: String,
-    description: String,
-}
+// struct EnumItem {
+//     name: String,
+//     value: String,
+//     description: String,
+// }
 
 // #[derive(Default, Debug)]
 // pub struct Revision {
