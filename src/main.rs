@@ -208,6 +208,7 @@ impl YangType {
     }
 }
 
+#[derive(Debug)]
 pub enum AllNode {
     EmptyNode,
     ValueNode(Box<ValueNode>),
@@ -216,22 +217,25 @@ pub enum AllNode {
     EnumerationNode(Box<EnumerationNode>),
 }
 
+#[derive(Debug)]
 pub struct ValueNode {
     pub name: String,
     pub nodes: (),
 }
 
+#[derive(Debug)]
 pub struct DescriptionNode {
     pub name: String,
     pub nodes: (),
 }
 
+#[derive(Debug)]
 pub struct EnumNode {
     pub name: String,
     pub nodes: (Vec<AllNode>,),
 }
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct EnumerationNode {
     pub name: String,
     pub nodes: (Vec<AllNode>,),
@@ -246,6 +250,21 @@ impl EnumerationNode {
             nodes: (nodes,),
             min: 0,
             max: 0,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TypedefNode {
+    pub name: String,
+    pub typ: Option<AllNode>,
+}
+
+impl TypedefNode {
+    fn new(name: String, typ: Option<AllNode>) -> Self {
+        TypedefNode {
+            name: name,
+            typ: typ,
         }
     }
 }
@@ -347,17 +366,20 @@ fn type_enumeration_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
     let (s, enums) = many0(enum_parse)(s)?;
-    // for e in &enums {
-    //     if let AllNode::EnumNode(n) = e {
-    //         println!("{:?}", n.name);
-    //     }
-    // }
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
     let node = EnumerationNode::new(enums);
 
     Ok((s, AllNode::EnumerationNode(Box::new(node))))
+}
+
+pub fn find_type_node(nodes: &mut Vec<AllNode>) -> Option<AllNode> {
+    let index = nodes.iter().position(|x| match x {
+        AllNode::EnumerationNode(_) => true,
+        _ => false,
+    })?;
+    Some(nodes.swap_remove(index))
 }
 
 // Module:top
@@ -368,16 +390,17 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, ident) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, _) = many0(alt((
-        type_enumeration_parse,
+    let (s, mut nodes) = many0(alt((
         type_uint8_parse,
+        type_enumeration_parse,
         description_parse,
         reference_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
-    // YangType.
+    let node = TypedefNode::new(String::from(ident), find_type_node(&mut nodes));
+    println!("{:?}", node);
 
     Ok((s, (k, ident)))
 }
