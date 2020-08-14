@@ -334,7 +334,7 @@ fn enum_parse(s: &str) -> IResult<&str, AllNode> {
     Ok((s, AllNode::EnumNode(Box::new(node))))
 }
 
-fn uint8_parse(s: &str) -> IResult<&str, (&str, &str)> {
+fn range_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, k) = tag("range")(s)?;
     let (s, _) = multispace1(s)?;
@@ -345,16 +345,41 @@ fn uint8_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
+fn uint_sub_parse(s: &str) -> IResult<&str, Vec<AllNode>> {
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(range_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, vec![]))
+}
+
 fn type_uint8_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, _) = tag("uint8")(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = char('{')(s)?;
-    let (s, _) = many0(uint8_parse)(s)?;
+    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+    Ok((s, AllNode::EmptyNode))
+}
+
+fn type_uint16_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = multispace0(s)?;
-    let (s, _) = char('}')(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("uint16")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+    Ok((s, AllNode::EmptyNode))
+}
+
+fn type_uint32_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("uint32")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
     Ok((s, AllNode::EmptyNode))
 }
 
@@ -392,6 +417,8 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = char('{')(s)?;
     let (s, mut nodes) = many0(alt((
         type_uint8_parse,
+        type_uint16_parse,
+        type_uint32_parse,
         type_enumeration_parse,
         description_parse,
         reference_parse,
