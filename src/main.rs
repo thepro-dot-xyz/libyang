@@ -575,7 +575,7 @@ fn yang_parse(s: &str) -> IResult<&str, &str> {
 fn main() {
     // Allocate a new Yang.
     let mut yang = Yang::new();
-    yang.add_path("/etc/openconfigd/yang:tests/...");
+    yang.add_path("/etc/openconfigd/yang:yang/...");
     // println!("{:?}", yang.paths());
 
     // Read a module "ietf-dhcp".
