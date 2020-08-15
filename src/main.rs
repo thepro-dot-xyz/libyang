@@ -371,6 +371,36 @@ fn uint_sub_parse(s: &str) -> IResult<&str, Vec<AllNode>> {
     Ok((s, vec![]))
 }
 
+fn pattern_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = tag("pattern")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = quoted_string_list(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+
+    Ok((s, (k, v)))
+}
+
+fn length_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = tag("length")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+
+    Ok((s, (k, v)))
+}
+
+fn pattern_sub_parse(s: &str) -> IResult<&str, Vec<AllNode>> {
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(alt((pattern_parse, length_parse)))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, vec![]))
+}
+
 fn type_uint8_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
@@ -398,6 +428,16 @@ fn type_uint32_parse(s: &str) -> IResult<&str, AllNode> {
     let (s, _) = tag("uint32")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+    Ok((s, AllNode::EmptyNode))
+}
+
+fn type_string_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("string")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = alt((pattern_sub_parse, semicolon_end_parse))(s)?;
     Ok((s, AllNode::EmptyNode))
 }
 
@@ -441,6 +481,19 @@ fn type_union_parse(s: &str) -> IResult<&str, AllNode> {
     Ok((s, AllNode::EnumerationNode(Box::new(node))))
 }
 
+fn type_reference_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = path_identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, _) = many0(pattern_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, AllNode::EmptyNode))
+}
+
 pub fn find_type_node(nodes: &mut Vec<AllNode>) -> Option<AllNode> {
     let index = nodes.iter().position(|x| match x {
         AllNode::EnumerationNode(_) => true,
@@ -461,8 +514,10 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
         type_uint8_parse,
         type_uint16_parse,
         type_uint32_parse,
+        type_string_parse,
         type_enumeration_parse,
         type_union_parse,
+        type_reference_parse,
         description_parse,
         reference_parse,
     )))(s)?;
