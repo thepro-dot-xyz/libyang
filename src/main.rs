@@ -1,13 +1,11 @@
 use libyang::{Module, Modules, Yang};
 
 // use escape8259::unescape;
-use nom::branch::alt;
+use nom::branch::{alt, permutation};
 use nom::bytes::complete::{tag, take_until, take_while, take_while1, take_while_m_n};
-use nom::character::complete::{anychar, char, multispace0, multispace1};
-// use nom::character::is_digit;
-// use nom::combinator::{map_res, recognize, verify};
+use nom::character::complete::{anychar, char, multispace0, multispace1, none_of};
 use nom::combinator::{recognize, verify};
-use nom::multi::many0;
+use nom::multi::{many0, separated_list};
 use nom::sequence::{delimited, pair};
 use nom::IResult;
 
@@ -31,6 +29,13 @@ pub fn identifier(s: &str) -> IResult<&str, &str> {
         verify(anychar, |c: &char| c.is_ascii_alphabetic() || c == &'_'),
         take_while(is_identifier),
     ))(s)
+}
+
+pub fn path_identifier(s: &str) -> IResult<&str, &str> {
+    let (s, _) = identifier(s)?;
+    let (s, _) = tag(":")(s)?;
+    let (s, id) = identifier(s)?;
+    Ok((s, id))
 }
 
 // RFC7950 6.1.3.  Quoting
@@ -70,6 +75,19 @@ fn double_quoted_string(s: &str) -> IResult<&str, &str> {
     // let parser = delimited(tag("\""), string_body, tag("\""));
     // map_res(parser, |x| unescape(x))(s)
     delimited(tag("\""), string_body, tag("\""))(s)
+}
+
+fn quoted_string(s: &str) -> IResult<&str, &str> {
+    let (s, _) = delimited(tag("'"), many0(none_of("'")), tag("'"))(s)?;
+    Ok((s, ""))
+}
+
+fn quoted_string_list(s: &str) -> IResult<&str, &str> {
+    let (s, _) = separated_list(
+        permutation((multispace0, char('+'), multispace0)),
+        quoted_string,
+    )(s)?;
+    Ok((s, ""))
 }
 
 fn revision_date_parse(s: &str) -> IResult<&str, &str> {
@@ -399,6 +417,30 @@ fn type_enumeration_parse(s: &str) -> IResult<&str, AllNode> {
     Ok((s, AllNode::EnumerationNode(Box::new(node))))
 }
 
+fn type_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = path_identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag(";")(s)?;
+    Ok((s, AllNode::EmptyNode))
+}
+
+fn type_union_parse(s: &str) -> IResult<&str, AllNode> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("union")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, enums) = many0(type_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    let node = EnumerationNode::new(enums);
+    Ok((s, AllNode::EnumerationNode(Box::new(node))))
+}
+
 pub fn find_type_node(nodes: &mut Vec<AllNode>) -> Option<AllNode> {
     let index = nodes.iter().position(|x| match x {
         AllNode::EnumerationNode(_) => true,
@@ -420,6 +462,7 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
         type_uint16_parse,
         type_uint32_parse,
         type_enumeration_parse,
+        type_union_parse,
         description_parse,
         reference_parse,
     )))(s)?;
@@ -496,10 +539,11 @@ fn main() {
 
     let ytype = YangType::new(TypeKind::Yenum);
     println!("{:?}", ytype);
-    // let literal = r#"/*** collection abc*/"#;
-    // let result = c_comment_parse(literal);
-    // println!("{:?}", literal);
-    // println!("{:?}", result);
+
+    let literal = r#"'collection abc' + 'hogehoge'"#;
+    let result = quoted_string_list(literal);
+    println!("{:?}", literal);
+    println!("{:?}", result);
 
     // Move to test.
     // let revision = "2020-08-10";
