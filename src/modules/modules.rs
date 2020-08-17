@@ -59,7 +59,7 @@ impl Modules {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct NamespaceNode {
     pub name: String,
 }
@@ -72,7 +72,7 @@ impl NamespaceNode {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct PrefixNode {
     pub name: String,
 }

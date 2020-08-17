@@ -41,11 +41,26 @@ fn revision_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
 
 pub fn revision_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
-    let (s, _k) = tag("revision")(s)?;
+    let (s, _) = tag("revision")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, _v) = revision_date_token_parse(s)?;
+    let (s, v) = revision_date_token_parse(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = alt((revision_sub_parse, semicolon_end_parse))(s)?;
+    let (s, subs) = alt((revision_sub_parse, semicolon_end_parse))(s)?;
+
+    if let Node::Revision(mut node) = v {
+        for sub in &subs {
+            match sub {
+                Node::Description(n) => {
+                    node.description = Some(n.name.clone());
+                }
+                Node::Reference(n) => {
+                    node.reference = Some(n.name.clone());
+                }
+                _ => {}
+            }
+        }
+        return Ok((s, Node::Revision(node)));
+    }
     Ok((s, Node::EmptyNode))
 }
 
@@ -64,20 +79,65 @@ mod tests {
         let node = Node::Revision(Box::new(n));
 
         let (_, v) = revision_date_parse(revision).unwrap();
-        println!("XXX {:?}", v);
-        println!("XXX {:?}", node);
         assert_eq!(v, node);
-
-        println!("{:?}", revision_date_token_parse(revision));
+        let (_, v) = revision_date_token_parse(revision).unwrap();
+        assert_eq!(v, node);
     }
 
     #[test]
     fn revision_date_quoted_parse_test() {
         let revision = "\"2020-08-11\"";
-        println!("{:?}", revision_date_quoted_parse(revision));
-        println!("{:?}", revision_date_token_parse(revision));
+        let n = RevisionNode {
+            name: String::from("2020-08-11"),
+            description: None,
+            reference: None,
+        };
+        let node = Node::Revision(Box::new(n));
+
+        let (_, v) = revision_date_quoted_parse(revision).unwrap();
+        assert_eq!(v, node);
+        let (_, v) = revision_date_token_parse(revision).unwrap();
+        assert_eq!(v, node);
     }
 
     #[test]
-    fn revision_single_statement_test() {}
+    fn revision_statement_test() {
+        let revision = r#"
+        revision 2018-02-20 {
+          description
+            "Updated to support NMDA.";
+          reference
+            "RFC 8343: A YANG Data Model for Interface Management";
+        }
+        "#;
+
+        let n = RevisionNode {
+            name: String::from("2018-02-20"),
+            description: Some(String::from("Updated to support NMDA.")),
+            reference: Some(String::from(
+                "RFC 8343: A YANG Data Model for Interface Management",
+            )),
+        };
+        let node = Node::Revision(Box::new(n));
+
+        let (_, v) = revision_parse(revision).unwrap();
+        assert_eq!(v, node);
+    }
+
+    #[test]
+    fn revision_single_statement_test() {
+        let revision = r#"
+        revision 2018-02-20;
+        "#;
+
+        let n = RevisionNode {
+            name: String::from("2018-02-20"),
+            description: None,
+            reference: None,
+        };
+        let node = Node::Revision(Box::new(n));
+
+        let (_, v) = revision_parse(revision).unwrap();
+        assert_eq!(v, node);
+    }
 }
