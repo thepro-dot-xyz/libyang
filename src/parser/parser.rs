@@ -77,17 +77,17 @@ pub fn double_quoted_string(s: &str) -> IResult<&str, &str> {
     delimited(tag("\""), string_body, tag("\""))(s)
 }
 
-pub fn quoted_string(s: &str) -> IResult<&str, &str> {
-    let (s, _) = delimited(tag("'"), many0(none_of("'")), tag("'"))(s)?;
-    Ok((s, ""))
+pub fn quoted_string(s: &str) -> IResult<&str, String> {
+    let (s, v) = delimited(tag("'"), many0(none_of("'")), tag("'"))(s)?;
+    Ok((s, v.into_iter().collect()))
 }
 
-pub fn quoted_string_list(s: &str) -> IResult<&str, &str> {
-    let (s, _) = separated_list(
+pub fn quoted_string_list(s: &str) -> IResult<&str, String> {
+    let (s, v) = separated_list(
         permutation((multispace0, char('+'), multispace0)),
         quoted_string,
     )(s)?;
-    Ok((s, ""))
+    Ok((s, v.into_iter().collect()))
 }
 
 pub fn c_comment_parse(s: &str) -> IResult<&str, Node> {
@@ -204,4 +204,38 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
         }
     }
     Ok((s, module))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quoted_string_list_test() {
+        let literal = r#"'collection abc' + 'hogehoge'"#;
+        let (_, v) = quoted_string_list(literal).unwrap();
+        assert_eq!(v, "collection abchogehoge");
+    }
+
+    // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
+    // println!("{}", literal);
+
+    // let literal = r"\na";
+    // let result = escape_code(literal);
+    // println!("{:?}", result);
+
+    // let literal = r#"main-routine_1 "#;
+    // let result = nonescaped_string(literal);
+    // println!("{:?}", result);
+
+    // let literal = r#""hoge\thoga\nhoge""#;
+    // println!("l: {:?}", literal);
+    // match double_quoted_string(literal) {
+    //     Ok((_, o)) => {
+    //         println!("output: {}", o);
+    //     }
+    //     Err(e) => {
+    //         println!("{}", e);
+    //     }
+    // }
 }

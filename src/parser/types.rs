@@ -144,11 +144,10 @@ fn pattern_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, k) = tag("pattern")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, v) = quoted_string_list(s)?;
+    let (s, _v) = quoted_string_list(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
-
-    Ok((s, (k, v)))
+    Ok((s, (k, "")))
 }
 
 fn length_parse(s: &str) -> IResult<&str, (&str, &str)> {
@@ -296,4 +295,15 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
     let _node = TypedefNode::new(String::from(ident), find_type_node(&mut nodes));
 
     Ok((s, Node::EmptyNode))
+}
+
+#[cfg(test)]
+mod tests {
+    // use super::*;
+
+    #[test]
+    fn yang_type() {
+        // let ytype = YangType::new(TypeKind::Yenum);
+        // println!("{:?}", ytype);
+    }
 }

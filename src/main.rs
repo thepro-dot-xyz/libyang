@@ -27,34 +27,4 @@ fn main() {
             println!("module parse: {:?}", e);
         }
     }
-
-    // let ytype = YangType::new(TypeKind::Yenum);
-    // println!("{:?}", ytype);
-
-    let literal = r#"'collection abc' + 'hogehoge'"#;
-    let result = quoted_string_list(literal);
-    println!("{:?}", literal);
-    println!("{:?}", result);
-
-    // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
-    // println!("{}", literal);
-
-    // let literal = r"\na";
-    // let result = escape_code(literal);
-    // println!("{:?}", result);
-
-    // let literal = r#"main-routine_1 "#;
-    // let result = nonescaped_string(literal);
-    // println!("{:?}", result);
-
-    // let literal = r#""hoge\thoga\nhoge""#;
-    // println!("l: {:?}", literal);
-    // match double_quoted_string(literal) {
-    //     Ok((_, o)) => {
-    //         println!("output: {}", o);
-    //     }
-    //     Err(e) => {
-    //         println!("{}", e);
-    //     }
-    // }
 }
