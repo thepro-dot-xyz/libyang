@@ -1,9 +1,5 @@
 use std::collections::HashMap;
 
-pub struct Modules {
-    pub modules: HashMap<String, Module>,
-}
-
 // RFC7950 7.1.1.  The module's Substatements
 //
 // +--------------+---------+-------------+
@@ -40,6 +36,18 @@ pub struct Modules {
 //
 // In RFC6020 (YANG 1), yang-version cardinality is 0..1.
 
+pub struct Modules {
+    pub modules: HashMap<String, Module>,
+}
+
+impl Modules {
+    pub fn new() -> Self {
+        Self {
+            modules: HashMap::new(),
+        }
+    }
+}
+
 #[derive(Default, Debug)]
 pub struct Module {
     pub name: String,
@@ -51,10 +59,11 @@ pub struct Module {
     pub revisions: Vec<RevisionNode>,
 }
 
-impl Modules {
-    pub fn new() -> Self {
-        Modules {
-            modules: HashMap::new(),
+impl Module {
+    pub fn new(name: String) -> Self {
+        Self {
+            name: name,
+            ..Default::default()
         }
     }
 }

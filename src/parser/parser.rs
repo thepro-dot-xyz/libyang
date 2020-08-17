@@ -169,10 +169,10 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
 pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, ident) = identifier(s)?;
+    let (s, name) = identifier(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
-    let (s, nodes) = many0(alt((
+    let (s, mut nodes) = many0(alt((
         module_parse,
         revision_parse,
         c_comment_parse,
@@ -181,9 +181,9 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
-    let mut module = Module::default();
-    module.name = String::from(ident);
-    for node in &nodes {
+    let mut module = Module::new(name.to_owned());
+
+    while let Some(node) = nodes.pop() {
         match node {
             Node::Namespace(n) => {
                 module.namespace = n.name.to_owned();
