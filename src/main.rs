@@ -138,35 +138,6 @@ fn revision_parse(s: &str) -> IResult<&str, Node> {
 }
 
 // Module:top
-fn module_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, k) = alt((
-        tag("namespace"),
-        tag("prefix"),
-        tag("organization"),
-        tag("contact"),
-        tag("description"),
-    ))(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, v) = double_quoted_string(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char(';')(s)?;
-    let node = match k {
-        "organization" => {
-            let n = OrganizationNode::new(v);
-            Node::Organization(Box::new(n))
-        }
-        "prefix" => {
-            let n = PrefixNode::new(v);
-            Node::Prefix(Box::new(n))
-        }
-
-        _ => Node::EmptyNode,
-    };
-    Ok((s, node))
-}
-
-// Module:top
 fn c_comment_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("/*")(s)?;
@@ -241,12 +212,15 @@ impl YangType {
 #[derive(Debug)]
 pub enum Node {
     EmptyNode,
+    Namespace(Box<NamespaceNode>),
+    Prefix(Box<PrefixNode>),
+    Organization(Box<OrganizationNode>),
+    Contact(Box<ContactNode>),
+    Description(Box<DescriptionNode>),
+    Reference(Box<ReferenceNode>),
     ValueNode(Box<ValueNode>),
-    DescriptionNode(Box<DescriptionNode>),
     EnumNode(Box<EnumNode>),
     EnumerationNode(Box<EnumerationNode>),
-    Organization(Box<OrganizationNode>),
-    Prefix(Box<PrefixNode>),
 }
 
 #[derive(Debug)]
@@ -255,11 +229,11 @@ pub struct ValueNode {
     pub nodes: (),
 }
 
-#[derive(Debug)]
-pub struct DescriptionNode {
-    pub name: String,
-    pub nodes: (),
-}
+// #[derive(Debug)]
+// pub struct DescriptionNode {
+//     pub name: String,
+//     pub nodes: (),
+// }
 
 #[derive(Debug)]
 pub struct Uint8Node {
@@ -317,15 +291,6 @@ fn single_statement_parse(s: &str, key: String) -> IResult<&str, &str> {
     Ok((s, v))
 }
 
-fn description_parse(s: &str) -> IResult<&str, Node> {
-    let (s, v) = single_statement_parse(s, String::from("description"))?;
-    let node = DescriptionNode {
-        name: String::from(v),
-        nodes: (),
-    };
-    Ok((s, Node::DescriptionNode(Box::new(node))))
-}
-
 fn value_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_statement_parse(s, String::from("value"))?;
     let node = ValueNode {
@@ -335,13 +300,16 @@ fn value_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::ValueNode(Box::new(node))))
 }
 
+fn description_parse(s: &str) -> IResult<&str, Node> {
+    let (s, v) = single_statement_parse(s, String::from("description"))?;
+    let n = DescriptionNode::new(v);
+    Ok((s, Node::Description(Box::new(n))))
+}
+
 fn reference_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_statement_parse(s, String::from("reference"))?;
-    let node = DescriptionNode {
-        name: String::from(v),
-        nodes: (),
-    };
-    Ok((s, Node::DescriptionNode(Box::new(node))))
+    let node = ReferenceNode::new(v);
+    Ok((s, Node::Reference(Box::new(node))))
 }
 
 fn enum_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
@@ -543,10 +511,49 @@ fn typedef_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
-    let node = TypedefNode::new(String::from(ident), find_type_node(&mut nodes));
-    println!("{:?}", node);
+    let _node = TypedefNode::new(String::from(ident), find_type_node(&mut nodes));
 
     Ok((s, Node::EmptyNode))
+}
+
+// Module:top
+fn module_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = alt((
+        tag("namespace"),
+        tag("prefix"),
+        tag("organization"),
+        tag("contact"),
+        tag("description"),
+    ))(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let node = match k {
+        "namespace" => {
+            let n = NamespaceNode::new(v);
+            Node::Namespace(Box::new(n))
+        }
+        "prefix" => {
+            let n = PrefixNode::new(v);
+            Node::Prefix(Box::new(n))
+        }
+        "organization" => {
+            let n = OrganizationNode::new(v);
+            Node::Organization(Box::new(n))
+        }
+        "contact" => {
+            let n = ContactNode::new(v);
+            Node::Contact(Box::new(n))
+        }
+        "description" => {
+            let n = DescriptionNode::new(v);
+            Node::Description(Box::new(n))
+        }
+        _ => Node::EmptyNode,
+    };
+    Ok((s, node))
 }
 
 fn yang_parse(s: &str) -> IResult<&str, Module> {
@@ -568,15 +575,15 @@ fn yang_parse(s: &str) -> IResult<&str, Module> {
     module.name = String::from(ident);
     for node in &nodes {
         match node {
+            Node::Namespace(n) => {
+                module.namespace = n.name.clone();
+            }
             Node::Prefix(n) => {
                 module.prefix = n.name.clone();
             }
             Node::Organization(n) => {
                 module.organization = Some(n.name.clone());
             }
-            //     "namespace" => {
-            //         module.namespace = String::from(v);
-            //     }
             //     "contact" => {
             //         module.contact = Some(String::from(v));
             //     }
@@ -601,6 +608,7 @@ fn main() {
     match yang_parse(&data) {
         Ok((_, module)) => {
             println!("Module name: {}", module.name);
+            println!("Module namespace: {}", module.namespace);
             println!("Module prefix: {}", module.prefix);
             ms.modules.insert(module.prefix.clone(), module);
 

@@ -59,13 +59,13 @@ impl Modules {
 }
 
 #[derive(Debug)]
-pub struct OrganizationNode {
+pub struct NamespaceNode {
     pub name: String,
 }
 
-impl OrganizationNode {
+impl NamespaceNode {
     pub fn new(name: &str) -> Self {
-        OrganizationNode {
+        Self {
             name: String::from(name),
         }
     }
@@ -78,7 +78,59 @@ pub struct PrefixNode {
 
 impl PrefixNode {
     pub fn new(name: &str) -> Self {
-        PrefixNode {
+        Self {
+            name: String::from(name),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct OrganizationNode {
+    pub name: String,
+}
+
+impl OrganizationNode {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: String::from(name),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ContactNode {
+    pub name: String,
+}
+
+impl ContactNode {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: String::from(name),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct DescriptionNode {
+    pub name: String,
+}
+
+impl DescriptionNode {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: String::from(name),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct ReferenceNode {
+    pub name: String,
+}
+
+impl ReferenceNode {
+    pub fn new(name: &str) -> Self {
+        Self {
             name: String::from(name),
         }
     }
