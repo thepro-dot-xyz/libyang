@@ -1,4 +1,8 @@
-pub struct Modules {}
+use std::collections::HashMap;
+
+pub struct Modules {
+    pub modules: HashMap<String, Module>,
+}
 
 #[derive(Default, Debug)]
 pub struct Module {
@@ -12,6 +16,8 @@ pub struct Module {
 
 impl Modules {
     pub fn new() -> Self {
-        Modules {}
+        Modules {
+            modules: HashMap::new(),
+        }
     }
 }

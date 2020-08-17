@@ -248,6 +248,11 @@ pub struct DescriptionNode {
 }
 
 #[derive(Debug)]
+pub struct Uint8Node {
+    pub name: String,
+}
+
+#[derive(Debug)]
 pub struct EnumNode {
     pub name: String,
     pub nodes: (Vec<AllNode>,),
@@ -530,7 +535,7 @@ fn typedef_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, ident)))
 }
 
-fn yang_parse(s: &str) -> IResult<&str, &str> {
+fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, ident) = identifier(s)?;
@@ -567,9 +572,7 @@ fn yang_parse(s: &str) -> IResult<&str, &str> {
             _ => {}
         }
     }
-    println!("{:?}", module);
-    println!("{}", module.description);
-    Ok((s, ident))
+    Ok((s, module))
 }
 
 fn main() {
@@ -579,13 +582,22 @@ fn main() {
     // println!("{:?}", yang.paths());
 
     // Read a module "ietf-dhcp".
-    let ms = Modules::new();
+    let mut ms = Modules::new();
     let data = yang.read(&ms, "ietf-inet-types").unwrap();
     // println!("{}", data);
 
     match yang_parse(&data) {
-        Ok((_, o)) => {
-            println!("Module {:?} parse success", o);
+        Ok((_, module)) => {
+            println!("Module parse success: {}", module.name);
+            println!("Module parse success: {}", module.prefix);
+            ms.modules.insert(module.prefix.clone(), module);
+
+            let entry = ms.modules.get(&"inet".to_string());
+            if let Some(e) = entry {
+                println!("XXX found {:?}", e);
+            } else {
+                println!("XXX not found")
+            }
         }
         Err(e) => {
             println!("module parse: {:?}", e);
