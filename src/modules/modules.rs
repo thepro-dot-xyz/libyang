@@ -59,88 +59,41 @@ impl Modules {
     }
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, new)]
 pub struct NamespaceNode {
     pub name: String,
 }
 
-impl NamespaceNode {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: String::from(name),
-        }
-    }
-}
-
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, new)]
 pub struct PrefixNode {
     pub name: String,
 }
 
-impl PrefixNode {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: String::from(name),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, new)]
 pub struct OrganizationNode {
     pub name: String,
 }
 
-impl OrganizationNode {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: String::from(name),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, new)]
 pub struct ContactNode {
     pub name: String,
 }
 
-impl ContactNode {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: String::from(name),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, new)]
 pub struct DescriptionNode {
     pub name: String,
 }
 
-impl DescriptionNode {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: String::from(name),
-        }
-    }
-}
-
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, PartialEq, new)]
 pub struct ReferenceNode {
     pub name: String,
 }
 
-impl ReferenceNode {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: String::from(name),
-            ..Default::default()
-        }
-    }
-}
-
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, PartialEq, new)]
 pub struct RevisionNode {
     pub name: String,
+    #[new(default)]
     pub description: Option<String>,
+    #[new(default)]
     pub reference: Option<String>,
 }

@@ -112,13 +112,13 @@ pub fn single_statement_parse(s: &str, key: String) -> IResult<&str, &str> {
 
 pub fn description_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_statement_parse(s, String::from("description"))?;
-    let n = DescriptionNode::new(v);
+    let n = DescriptionNode::new(v.to_owned());
     Ok((s, Node::Description(Box::new(n))))
 }
 
 pub fn reference_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_statement_parse(s, String::from("reference"))?;
-    let node = ReferenceNode::new(v);
+    let node = ReferenceNode::new(v.to_owned());
     Ok((s, Node::Reference(Box::new(node))))
 }
 
@@ -142,23 +142,23 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = char(';')(s)?;
     let node = match k {
         "namespace" => {
-            let n = NamespaceNode::new(v);
+            let n = NamespaceNode::new(v.to_owned());
             Node::Namespace(Box::new(n))
         }
         "prefix" => {
-            let n = PrefixNode::new(v);
+            let n = PrefixNode::new(v.to_owned());
             Node::Prefix(Box::new(n))
         }
         "organization" => {
-            let n = OrganizationNode::new(v);
+            let n = OrganizationNode::new(v.to_owned());
             Node::Organization(Box::new(n))
         }
         "contact" => {
-            let n = ContactNode::new(v);
+            let n = ContactNode::new(v.to_owned());
             Node::Contact(Box::new(n))
         }
         "description" => {
-            let n = DescriptionNode::new(v);
+            let n = DescriptionNode::new(v.to_owned());
             Node::Description(Box::new(n))
         }
         _ => Node::EmptyNode,

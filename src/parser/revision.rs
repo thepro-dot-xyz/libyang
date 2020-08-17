@@ -16,8 +16,7 @@ fn revision_date_parse(s: &str) -> IResult<&str, Node> {
     let (s, month) = take_while_m_n(2, 2, |c: char| c.is_ascii_digit())(s)?;
     let (s, _) = char('-')(s)?;
     let (s, day) = take_while_m_n(2, 2, |c: char| c.is_ascii_digit())(s)?;
-    let mut n = RevisionNode::default();
-    n.name = std::format!("{}-{}-{}", year, month, day);
+    let n = RevisionNode::new(std::format!("{}-{}-{}", year, month, day));
     Ok((s, Node::Revision(Box::new(n))))
 }
 
