@@ -16,9 +16,9 @@ fn scan_dir() {
 #[test]
 fn scan_dir_recursive() {
     let yang = Yang::new();
-    let path = PathBuf::from("tests/ietf/ietf-inet-types.yang");
+    let path = PathBuf::from("yang/third_party/ietf/ietf-inet-types.yang");
 
-    if let Ok(p) = yang.scan_dir("tests", "ietf-inet-types.yang", true) {
+    if let Ok(p) = yang.scan_dir("yang", "ietf-inet-types.yang", true) {
         assert_eq!(p, path);
     } else {
         panic!("scan_dir should match to yang file.");
@@ -28,9 +28,9 @@ fn scan_dir_recursive() {
 #[test]
 fn scan_dir_recursive_without_yang() {
     let yang = Yang::new();
-    let path = PathBuf::from("tests/ietf/ietf-inet-types.yang");
+    let path = PathBuf::from("yang/third_party/ietf/ietf-inet-types.yang");
 
-    if let Ok(p) = yang.scan_dir("tests", "ietf-inet-types", true) {
+    if let Ok(p) = yang.scan_dir("yang", "ietf-inet-types", true) {
         assert_eq!(p, path);
     } else {
         panic!("scan_dir should match to yang file.");
