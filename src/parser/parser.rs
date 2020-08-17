@@ -200,6 +200,9 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
             Node::Description(n) => {
                 module.description = Some(n.name.to_owned());
             }
+            Node::Revision(n) => {
+                module.revisions.push(*n);
+            }
             _ => {}
         }
     }
