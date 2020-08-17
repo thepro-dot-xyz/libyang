@@ -51,10 +51,10 @@ pub fn revision_parse(s: &str) -> IResult<&str, Node> {
         for sub in &subs {
             match sub {
                 Node::Description(n) => {
-                    node.description = Some(n.name.clone());
+                    node.description = Some(n.name.to_owned());
                 }
                 Node::Reference(n) => {
-                    node.reference = Some(n.name.clone());
+                    node.reference = Some(n.name.to_owned());
                 }
                 _ => {}
             }

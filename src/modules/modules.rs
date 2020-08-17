@@ -124,7 +124,7 @@ impl DescriptionNode {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct ReferenceNode {
     pub name: String,
 }
@@ -133,6 +133,7 @@ impl ReferenceNode {
     pub fn new(name: &str) -> Self {
         Self {
             name: String::from(name),
+            ..Default::default()
         }
     }
 }

@@ -186,13 +186,13 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     for node in &nodes {
         match node {
             Node::Namespace(n) => {
-                module.namespace = n.name.clone();
+                module.namespace = n.name.to_owned();
             }
             Node::Prefix(n) => {
-                module.prefix = n.name.clone();
+                module.prefix = n.name.to_owned();
             }
             Node::Organization(n) => {
-                module.organization = Some(n.name.clone());
+                module.organization = Some(n.name.to_owned());
             }
             //     "contact" => {
             //         module.contact = Some(String::from(v));
