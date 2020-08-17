@@ -194,12 +194,12 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
             Node::Organization(n) => {
                 module.organization = Some(n.name.to_owned());
             }
-            //     "contact" => {
-            //         module.contact = Some(String::from(v));
-            //     }
-            //     "description" => {
-            //         module.description = Some(String::from(v));
-            //     }
+            Node::Contact(n) => {
+                module.contact = Some(n.name.to_owned());
+            }
+            Node::Description(n) => {
+                module.description = Some(n.name.to_owned());
+            }
             _ => {}
         }
     }
