@@ -35,3 +35,49 @@ impl EnumerationNode {
         }
     }
 }
+
+#[derive(Debug)]
+pub enum TypeKind {
+    Ynone,
+    // Yint8,
+    // Yenum,
+}
+
+#[derive(Debug)]
+pub struct YangType {
+    pub name: String,
+    pub kind: TypeKind,
+}
+
+impl Default for YangType {
+    fn default() -> Self {
+        Self {
+            name: String::from(""),
+            kind: TypeKind::Ynone,
+        }
+    }
+}
+
+impl YangType {
+    pub fn new(kind: TypeKind) -> Self {
+        YangType {
+            kind: kind,
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct TypedefNode {
+    pub name: String,
+    pub typ: Option<Node>,
+}
+
+impl TypedefNode {
+    pub fn new(name: String, typ: Option<Node>) -> Self {
+        TypedefNode {
+            name: name,
+            typ: typ,
+        }
+    }
+}

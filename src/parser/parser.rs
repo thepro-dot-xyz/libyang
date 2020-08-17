@@ -1,12 +1,41 @@
 use crate::modules::*;
 use crate::Node;
-use nom::branch::alt;
-use nom::bytes::complete::{tag, take_while1};
-use nom::character::complete::{char, multispace0, multispace1};
-use nom::combinator::recognize;
-use nom::multi::many0;
+use nom::branch::{alt, permutation};
+use nom::bytes::complete::{tag, take_until, take_while, take_while1};
+use nom::character::complete::{anychar, char, multispace0, multispace1, none_of};
+use nom::combinator::{recognize, verify};
+use nom::multi::{many0, separated_list};
 use nom::sequence::{delimited, pair};
 use nom::IResult;
+
+// RFC7950 6.2.  Identifiers
+//     Identifiers are used to identify different kinds of YANG items by
+//     name.  Each identifier starts with an uppercase or lowercase ASCII
+//     letter or an underscore character, followed by zero or more ASCII
+//     letters, digits, underscore characters, hyphens, and dots.
+//     Implementations MUST support identifiers up to 64 characters in
+//     length and MAY support longer identifiers.  Identifiers are case
+//     sensitive.  The identifier syntax is formally defined by the rule
+//     "identifier" in Section 14.  Identifiers can be specified as quoted
+//     or unquoted strings.
+
+pub fn is_identifier(c: char) -> bool {
+    c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.'
+}
+
+pub fn identifier(s: &str) -> IResult<&str, &str> {
+    recognize(pair(
+        verify(anychar, |c: &char| c.is_ascii_alphabetic() || c == &'_'),
+        take_while(is_identifier),
+    ))(s)
+}
+
+pub fn path_identifier(s: &str) -> IResult<&str, &str> {
+    let (s, _) = identifier(s)?;
+    let (s, _) = tag(":")(s)?;
+    let (s, id) = identifier(s)?;
+    Ok((s, id))
+}
 
 // RFC7950 6.1.3.  Quoting
 //     Within a double-quoted string (enclosed within " "), a backslash
@@ -41,10 +70,32 @@ fn string_body(s: &str) -> IResult<&str, &str> {
     recognize(many0(alt((nonescaped_string, escape_code))))(s)
 }
 
-fn double_quoted_string(s: &str) -> IResult<&str, &str> {
+pub fn double_quoted_string(s: &str) -> IResult<&str, &str> {
     // let parser = delimited(tag("\""), string_body, tag("\""));
     // map_res(parser, |x| unescape(x))(s)
     delimited(tag("\""), string_body, tag("\""))(s)
+}
+
+pub fn quoted_string(s: &str) -> IResult<&str, &str> {
+    let (s, _) = delimited(tag("'"), many0(none_of("'")), tag("'"))(s)?;
+    Ok((s, ""))
+}
+
+pub fn quoted_string_list(s: &str) -> IResult<&str, &str> {
+    let (s, _) = separated_list(
+        permutation((multispace0, char('+'), multispace0)),
+        quoted_string,
+    )(s)?;
+    Ok((s, ""))
+}
+
+pub fn c_comment_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("/*")(s)?;
+    let (s, _) = take_until("*/")(s)?;
+    let (s, _) = tag("*/")(s)?;
+    let (s, _) = multispace0(s)?;
+    Ok((s, Node::EmptyNode))
 }
 
 // Single statement 'keyword: "double quoted string";'
