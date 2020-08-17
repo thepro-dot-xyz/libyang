@@ -1,3 +1,4 @@
+use super::*;
 use crate::modules::*;
 use crate::Node;
 use nom::branch::{alt, permutation};
@@ -124,4 +125,83 @@ pub fn reference_parse(s: &str) -> IResult<&str, Node> {
 pub fn semicolon_end_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = tag(";")(s)?;
     Ok((s, vec![]))
+}
+
+fn module_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = alt((
+        tag("namespace"),
+        tag("prefix"),
+        tag("organization"),
+        tag("contact"),
+        tag("description"),
+    ))(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let node = match k {
+        "namespace" => {
+            let n = NamespaceNode::new(v);
+            Node::Namespace(Box::new(n))
+        }
+        "prefix" => {
+            let n = PrefixNode::new(v);
+            Node::Prefix(Box::new(n))
+        }
+        "organization" => {
+            let n = OrganizationNode::new(v);
+            Node::Organization(Box::new(n))
+        }
+        "contact" => {
+            let n = ContactNode::new(v);
+            Node::Contact(Box::new(n))
+        }
+        "description" => {
+            let n = DescriptionNode::new(v);
+            Node::Description(Box::new(n))
+        }
+        _ => Node::EmptyNode,
+    };
+    Ok((s, node))
+}
+
+pub fn yang_parse(s: &str) -> IResult<&str, Module> {
+    let (s, _) = tag("module")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, ident) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, nodes) = many0(alt((
+        module_parse,
+        revision_parse,
+        c_comment_parse,
+        typedef_parse,
+    )))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+
+    let mut module = Module::default();
+    module.name = String::from(ident);
+    for node in &nodes {
+        match node {
+            Node::Namespace(n) => {
+                module.namespace = n.name.clone();
+            }
+            Node::Prefix(n) => {
+                module.prefix = n.name.clone();
+            }
+            Node::Organization(n) => {
+                module.organization = Some(n.name.clone());
+            }
+            //     "contact" => {
+            //         module.contact = Some(String::from(v));
+            //     }
+            //     "description" => {
+            //         module.description = Some(String::from(v));
+            //     }
+            _ => {}
+        }
+    }
+    Ok((s, module))
 }
