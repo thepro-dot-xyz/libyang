@@ -1,4 +1,4 @@
-use libyang::{Module, Modules, Yang};
+use libyang::*;
 
 // use escape8259::unescape;
 use nom::branch::{alt, permutation};
@@ -153,10 +153,12 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = char(';')(s)?;
     let node = match k {
         "organization" => {
-            let o = Organization {
-                name: String::from(v),
-            };
-            Node::Organization(Box::new(o))
+            let n = OrganizationNode::new(v);
+            Node::Organization(Box::new(n))
+        }
+        "prefix" => {
+            let n = PrefixNode::new(v);
+            Node::Prefix(Box::new(n))
         }
 
         _ => Node::EmptyNode,
@@ -243,12 +245,8 @@ pub enum Node {
     DescriptionNode(Box<DescriptionNode>),
     EnumNode(Box<EnumNode>),
     EnumerationNode(Box<EnumerationNode>),
-    Organization(Box<Organization>),
-}
-
-#[derive(Debug)]
-pub struct Organization {
-    pub name: String,
+    Organization(Box<OrganizationNode>),
+    Prefix(Box<PrefixNode>),
 }
 
 #[derive(Debug)]
@@ -570,20 +568,14 @@ fn yang_parse(s: &str) -> IResult<&str, Module> {
     module.name = String::from(ident);
     for node in &nodes {
         match node {
+            Node::Prefix(n) => {
+                module.prefix = n.name.clone();
+            }
             Node::Organization(n) => {
-                // if module.organization != None {
-                //     panic!("XXX dup organization");
-                // }
                 module.organization = Some(n.name.clone());
             }
             //     "namespace" => {
             //         module.namespace = String::from(v);
-            //     }
-            //     "prefix" => {
-            //         module.prefix = String::from(v);
-            //     }
-            //     "organization" => {
-            //         module.organization = Some(String::from(v));
             //     }
             //     "contact" => {
             //         module.contact = Some(String::from(v));
@@ -601,17 +593,15 @@ fn main() {
     // Allocate a new Yang.
     let mut yang = Yang::new();
     yang.add_path("/etc/openconfigd/yang:yang/...");
-    // println!("{:?}", yang.paths());
 
-    // Read a module "ietf-dhcp".
+    // Read a module "ietf-inet-types".
     let mut ms = Modules::new();
     let data = yang.read(&ms, "ietf-inet-types").unwrap();
-    // println!("{}", data);
 
     match yang_parse(&data) {
         Ok((_, module)) => {
-            println!("Module parse success: {}", module.name);
-            println!("Module parse success: {}", module.prefix);
+            println!("Module name: {}", module.name);
+            println!("Module prefix: {}", module.prefix);
             ms.modules.insert(module.prefix.clone(), module);
 
             let entry = ms.modules.get(&"inet".to_string());

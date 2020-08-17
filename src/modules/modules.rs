@@ -57,3 +57,29 @@ impl Modules {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct OrganizationNode {
+    pub name: String,
+}
+
+impl OrganizationNode {
+    pub fn new(name: &str) -> Self {
+        OrganizationNode {
+            name: String::from(name),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct PrefixNode {
+    pub name: String,
+}
+
+impl PrefixNode {
+    pub fn new(name: &str) -> Self {
+        PrefixNode {
+            name: String::from(name),
+        }
+    }
+}
