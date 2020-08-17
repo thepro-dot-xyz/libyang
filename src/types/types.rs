@@ -1,6 +1,6 @@
 use crate::Node;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ValueNode {
     pub name: String,
     pub nodes: (),
@@ -11,13 +11,13 @@ pub struct Uint8Node {
     pub name: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct EnumNode {
     pub name: String,
     pub nodes: (Vec<Node>,),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub struct EnumerationNode {
     pub name: String,
     pub nodes: (Vec<Node>,),

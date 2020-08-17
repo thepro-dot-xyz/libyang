@@ -36,15 +36,6 @@ fn main() {
     println!("{:?}", literal);
     println!("{:?}", result);
 
-    // Move to test.
-    // let revision = "2020-08-10";
-    // println!("{:?}", revision_date_parse(revision));
-    // let revision_q = "\"2020-08-10\"";
-    // println!("{:?}", revision_date_quoted_parse(revision_q));
-
-    // println!("{:?}", revision_date_token_parse(revision));
-    // println!("{:?}", revision_date_token_parse(revision_q));
-
     // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
     // println!("{}", literal);
 

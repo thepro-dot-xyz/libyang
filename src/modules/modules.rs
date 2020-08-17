@@ -48,6 +48,7 @@ pub struct Module {
     pub organization: Option<String>,
     pub contact: Option<String>,
     pub description: Option<String>,
+    pub revisions: Vec<RevisionNode>,
 }
 
 impl Modules {
@@ -58,7 +59,7 @@ impl Modules {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct NamespaceNode {
     pub name: String,
 }
@@ -71,7 +72,7 @@ impl NamespaceNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct PrefixNode {
     pub name: String,
 }
@@ -84,7 +85,7 @@ impl PrefixNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct OrganizationNode {
     pub name: String,
 }
@@ -97,7 +98,7 @@ impl OrganizationNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ContactNode {
     pub name: String,
 }
@@ -110,7 +111,7 @@ impl ContactNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct DescriptionNode {
     pub name: String,
 }
@@ -123,7 +124,7 @@ impl DescriptionNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct ReferenceNode {
     pub name: String,
 }
@@ -136,15 +137,9 @@ impl ReferenceNode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, PartialEq)]
 pub struct RevisionNode {
     pub name: String,
-}
-
-impl RevisionNode {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: String::from(name),
-        }
-    }
+    pub description: Option<String>,
+    pub reference: Option<String>,
 }

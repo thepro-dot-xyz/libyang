@@ -1,7 +1,7 @@
 use crate::modules::*;
 use crate::types::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Node {
     EmptyNode,
     Namespace(Box<NamespaceNode>),
@@ -13,4 +13,5 @@ pub enum Node {
     ValueNode(Box<ValueNode>),
     EnumNode(Box<EnumNode>),
     EnumerationNode(Box<EnumerationNode>),
+    Revision(Box<RevisionNode>),
 }
