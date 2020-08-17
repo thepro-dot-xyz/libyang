@@ -135,3 +135,16 @@ impl ReferenceNode {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct RevisionNode {
+    pub name: String,
+}
+
+impl RevisionNode {
+    pub fn new(name: &str) -> Self {
+        Self {
+            name: String::from(name),
+        }
+    }
+}

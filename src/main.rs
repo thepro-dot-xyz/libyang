@@ -2,7 +2,7 @@ use libyang::*;
 
 // use escape8259::unescape;
 use nom::branch::{alt, permutation};
-use nom::bytes::complete::{tag, take_until, take_while, take_while1, take_while_m_n};
+use nom::bytes::complete::{tag, take_until, take_while, take_while1};
 use nom::character::complete::{anychar, char, multispace0, multispace1, none_of};
 use nom::combinator::{recognize, verify};
 use nom::multi::{many0, separated_list};
@@ -90,53 +90,6 @@ fn quoted_string_list(s: &str) -> IResult<&str, &str> {
     Ok((s, ""))
 }
 
-fn revision_date_parse(s: &str) -> IResult<&str, &str> {
-    // YYYY-MM-DD format.
-    let (s, year) = take_while_m_n(4, 4, |c: char| c.is_ascii_digit())(s)?;
-    let (s, _) = char('-')(s)?;
-    let (s, month) = take_while_m_n(2, 2, |c: char| c.is_ascii_digit())(s)?;
-    let (s, _) = char('-')(s)?;
-    let (s, day) = take_while_m_n(2, 2, |c: char| c.is_ascii_digit())(s)?;
-    println!("revision parsed: {}-{}-{}", year, month, day);
-    Ok((s, ""))
-}
-
-fn revision_date_quoted_parse(s: &str) -> IResult<&str, &str> {
-    // Quoted "YYYY-MM-DD" format.
-    let (s, _) = char('"')(s)?;
-    let (s, o) = revision_date_parse(s)?;
-    let (s, _) = char('"')(s)?;
-    Ok((s, o))
-}
-
-fn revision_date_token_parse(s: &str) -> IResult<&str, &str> {
-    alt((revision_date_parse, revision_date_quoted_parse))(s)
-}
-
-fn revision_sub_parse(s: &str) -> IResult<&str, (&str, &str)> {
-    let (s, _) = multispace0(s)?;
-    let (s, k) = alt((tag("description"), tag("reference")))(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, v) = double_quoted_string(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char(';')(s)?;
-    Ok((s, (k, v)))
-}
-
-// Module:top
-fn revision_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, _k) = tag("revision")(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, _v) = revision_date_token_parse(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char('{')(s)?;
-    let (s, _) = many0(revision_sub_parse)(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char('}')(s)?;
-    Ok((s, Node::EmptyNode))
-}
-
 // Module:top
 fn c_comment_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
@@ -210,62 +163,6 @@ impl YangType {
 }
 
 #[derive(Debug)]
-pub enum Node {
-    EmptyNode,
-    Namespace(Box<NamespaceNode>),
-    Prefix(Box<PrefixNode>),
-    Organization(Box<OrganizationNode>),
-    Contact(Box<ContactNode>),
-    Description(Box<DescriptionNode>),
-    Reference(Box<ReferenceNode>),
-    ValueNode(Box<ValueNode>),
-    EnumNode(Box<EnumNode>),
-    EnumerationNode(Box<EnumerationNode>),
-}
-
-#[derive(Debug)]
-pub struct ValueNode {
-    pub name: String,
-    pub nodes: (),
-}
-
-// #[derive(Debug)]
-// pub struct DescriptionNode {
-//     pub name: String,
-//     pub nodes: (),
-// }
-
-#[derive(Debug)]
-pub struct Uint8Node {
-    pub name: String,
-}
-
-#[derive(Debug)]
-pub struct EnumNode {
-    pub name: String,
-    pub nodes: (Vec<Node>,),
-}
-
-#[derive(Debug, Default)]
-pub struct EnumerationNode {
-    pub name: String,
-    pub nodes: (Vec<Node>,),
-    pub min: i32,
-    pub max: i32,
-}
-
-impl EnumerationNode {
-    fn new(nodes: Vec<Node>) -> Self {
-        EnumerationNode {
-            name: String::from(""),
-            nodes: (nodes,),
-            min: 0,
-            max: 0,
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct TypedefNode {
     pub name: String,
     pub typ: Option<Node>,
@@ -280,17 +177,6 @@ impl TypedefNode {
     }
 }
 
-// Single statement 'keyword: "double quoted string";'
-fn single_statement_parse(s: &str, key: String) -> IResult<&str, &str> {
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag(key.as_str())(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, v) = double_quoted_string(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = char(';')(s)?;
-    Ok((s, v))
-}
-
 fn value_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_statement_parse(s, String::from("value"))?;
     let node = ValueNode {
@@ -298,18 +184,6 @@ fn value_parse(s: &str) -> IResult<&str, Node> {
         nodes: (),
     };
     Ok((s, Node::ValueNode(Box::new(node))))
-}
-
-fn description_parse(s: &str) -> IResult<&str, Node> {
-    let (s, v) = single_statement_parse(s, String::from("description"))?;
-    let n = DescriptionNode::new(v);
-    Ok((s, Node::Description(Box::new(n))))
-}
-
-fn reference_parse(s: &str) -> IResult<&str, Node> {
-    let (s, v) = single_statement_parse(s, String::from("reference"))?;
-    let node = ReferenceNode::new(v);
-    Ok((s, Node::Reference(Box::new(node))))
 }
 
 fn enum_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
