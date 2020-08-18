@@ -199,6 +199,16 @@ fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
+fn type_uint64_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("uint64")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+    Ok((s, Node::EmptyNode))
+}
+
 fn type_string_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
@@ -249,16 +259,25 @@ fn type_union_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EnumerationNode(Box::new(node))))
 }
 
-fn type_reference_parse(s: &str) -> IResult<&str, Node> {
+fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, _) = path_identifier(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = char('{')(s)?;
-    let (s, _) = many0(pattern_parse)(s)?;
+    let (s, _) = alt((pattern_sub_parse, semicolon_end_parse))(s)?;
+
+    Ok((s, Node::EmptyNode))
+}
+
+fn type_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
-    let (s, _) = char('}')(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = alt((pattern_sub_parse, semicolon_end_parse))(s)?;
+
     Ok((s, Node::EmptyNode))
 }
 
@@ -268,6 +287,12 @@ pub fn find_type_node(nodes: &mut Vec<Node>) -> Option<Node> {
         _ => false,
     })?;
     Some(nodes.swap_remove(index))
+}
+
+pub fn default_parse(s: &str) -> IResult<&str, Node> {
+    let (s, v) = single_statement_parse(s, String::from("default"))?;
+    let n = DefaultNode::new(v.to_owned());
+    Ok((s, Node::Default(Box::new(n))))
 }
 
 // Module:top
@@ -282,10 +307,13 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
         type_uint8_parse,
         type_uint16_parse,
         type_uint32_parse,
+        type_uint64_parse,
         type_string_parse,
         type_enumeration_parse,
         type_union_parse,
-        type_reference_parse,
+        type_path_identifier_parse,
+        type_identifier_parse,
+        default_parse,
         description_parse,
         reference_parse,
     )))(s)?;

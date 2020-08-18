@@ -15,4 +15,5 @@ pub enum Node {
     EnumerationNode(Box<EnumerationNode>),
     Revision(Box<RevisionNode>),
     Typedef(Box<TypedefNode>),
+    Default(Box<DefaultNode>),
 }
