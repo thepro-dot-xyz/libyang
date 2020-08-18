@@ -5,9 +5,10 @@ fn main() {
     let mut yang = Yang::new();
     yang.add_path("/etc/openconfigd/yang:yang/...");
 
-    // Read a module "ietf-inet-types".
+    // Read a module.
     let mut ms = Modules::new();
-    let data = yang.read(&ms, "ietf-inet-types").unwrap();
+    let yang_name = "ietf-inet-types";
+    let data = yang.read(&ms, yang_name).unwrap();
 
     match yang_parse(&data) {
         Ok((_, module)) => {
