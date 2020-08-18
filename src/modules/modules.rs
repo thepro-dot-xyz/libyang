@@ -1,3 +1,4 @@
+use crate::types::*;
 use std::collections::HashMap;
 
 // RFC7950 7.1.1.  The module's Substatements
@@ -57,12 +58,14 @@ pub struct Module {
     pub contact: Option<String>,
     pub description: Option<String>,
     pub revisions: Vec<RevisionNode>,
+    pub typedefs: HashMap<String, TypedefNode>,
 }
 
 impl Module {
     pub fn new(name: String) -> Self {
         Self {
             name: name,
+            typedefs: HashMap::new(),
             ..Default::default()
         }
     }

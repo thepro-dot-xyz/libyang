@@ -1,5 +1,20 @@
 use crate::Node;
 
+#[derive(Debug, Default, PartialEq)]
+pub struct TypedefNode {
+    pub name: String,
+    pub typ: Option<Node>,
+}
+
+impl TypedefNode {
+    pub fn new(name: String, typ: Option<Node>) -> Self {
+        TypedefNode {
+            name: name,
+            typ: typ,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct ValueNode {
     pub name: String,
@@ -63,21 +78,6 @@ impl YangType {
         YangType {
             kind: kind,
             ..Default::default()
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct TypedefNode {
-    pub name: String,
-    pub typ: Option<Node>,
-}
-
-impl TypedefNode {
-    pub fn new(name: String, typ: Option<Node>) -> Self {
-        TypedefNode {
-            name: name,
-            typ: typ,
         }
     }
 }
