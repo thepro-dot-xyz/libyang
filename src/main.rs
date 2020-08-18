@@ -11,16 +11,19 @@ fn main() {
 
     match yang_parse(&data) {
         Ok((_, module)) => {
-            println!("Module name: {}", module.name);
-            println!("Module namespace: {}", module.namespace);
-            println!("Module prefix: {}", module.prefix);
             ms.modules.insert(module.prefix.to_owned(), module);
 
             let entry = ms.modules.get(&"inet".to_string());
             if let Some(e) = entry {
-                println!("XXX found {:?}", e);
+                println!("Module found");
+                println!("name: {}", e.name);
+                println!("namespace: {}", e.namespace);
+                println!("prefix: {}", e.prefix);
+                for (_, t) in &e.typedefs {
+                    println!("typedef: {}", t.name);
+                }
             } else {
-                println!("XXX not found")
+                println!("Module not found")
             }
         }
         Err(e) => {
