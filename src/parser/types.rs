@@ -292,9 +292,8 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
-    let _node = TypedefNode::new(String::from(ident), find_type_node(&mut nodes));
-
-    Ok((s, Node::EmptyNode))
+    let node = TypedefNode::new(String::from(ident), find_type_node(&mut nodes));
+    Ok((s, Node::Typedef(Box::new(node))))
 }
 
 #[cfg(test)]

@@ -203,6 +203,9 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
             Node::Revision(n) => {
                 module.revisions.push(*n);
             }
+            Node::Typedef(n) => {
+                module.typedefs.insert(n.name.to_owned(), *n);
+            }
             _ => {}
         }
     }

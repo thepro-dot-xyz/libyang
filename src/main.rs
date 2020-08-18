@@ -14,7 +14,7 @@ fn main() {
             println!("Module name: {}", module.name);
             println!("Module namespace: {}", module.namespace);
             println!("Module prefix: {}", module.prefix);
-            ms.modules.insert(module.prefix.clone(), module);
+            ms.modules.insert(module.prefix.to_owned(), module);
 
             let entry = ms.modules.get(&"inet".to_string());
             if let Some(e) = entry {
