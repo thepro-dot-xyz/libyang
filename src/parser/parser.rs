@@ -150,7 +150,7 @@ fn yang_version_arg_parse(s: &str) -> IResult<&str, &str> {
 }
 
 fn yang_version_arg_auote_parse(s: &str) -> IResult<&str, &str> {
-    let (s, v) = delimited(tag("\""), yang_version_arg_parse, tag("\""))(s)?;
+    let (s, v) = delimited(char('"'), yang_version_arg_parse, char('"'))(s)?;
     Ok((s, v))
 }
 
