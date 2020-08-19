@@ -132,6 +132,8 @@ pub fn semicolon_end_parse(s: &str) -> IResult<&str, Vec<Node>> {
     Ok((s, vec![]))
 }
 
+// RFC7950 14. AYNG ABNF Grammar for yang-version-stmt.
+//
 // yang-version-stmt   = yang-version-keyword sep yang-version-arg-str
 // stmtend
 //
@@ -139,6 +141,9 @@ pub fn semicolon_end_parse(s: &str) -> IResult<&str, Vec<Node>> {
 // < yang-version-arg >
 //
 // yang-version-arg    = "1.1"
+//
+// Note: we've added yang-version-arg = "1" so that we can support RFC6020 YANG 1.
+//
 fn yang_version_arg_parse(s: &str) -> IResult<&str, &str> {
     let (s, v) = alt((tag("1.1"), tag("1")))(s)?;
     Ok((s, v))
@@ -149,7 +154,7 @@ fn yang_version_arg_auote_parse(s: &str) -> IResult<&str, &str> {
     Ok((s, v))
 }
 
-fn yang_version_token_parse(s: &str) -> IResult<&str, &str> {
+fn yang_version_arg_str_parse(s: &str) -> IResult<&str, &str> {
     let (s, v) = alt((yang_version_arg_parse, yang_version_arg_auote_parse))(s)?;
     Ok((s, v))
 }
@@ -158,7 +163,7 @@ fn yang_version_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("yang-version")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, v) = yang_version_token_parse(s)?;
+    let (s, v) = yang_version_arg_str_parse(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
     let node = YangVersionNode::new(v.to_owned());
@@ -272,7 +277,7 @@ mod tests {
     #[test]
     fn yang_version_token_parse_test() {
         for (literal, output) in vec![("1", "1"), ("1.1", "1.1"), (r#""1""#, "1")] {
-            match yang_version_token_parse(literal) {
+            match yang_version_arg_str_parse(literal) {
                 Ok((_, v)) => {
                     assert_eq!(v, output);
                 }
