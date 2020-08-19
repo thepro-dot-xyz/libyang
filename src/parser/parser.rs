@@ -77,6 +77,11 @@ pub fn double_quoted_string(s: &str) -> IResult<&str, &str> {
     delimited(tag("\""), string_body, tag("\""))(s)
 }
 
+pub fn string_token_parse(s: &str) -> IResult<&str, &str> {
+    let (s, v) = alt((string_body, double_quoted_string))(s)?;
+    Ok((s, v))
+}
+
 pub fn quoted_string(s: &str) -> IResult<&str, String> {
     let (s, v) = delimited(tag("'"), many0(none_of("'")), tag("'"))(s)?;
     Ok((s, v.into_iter().collect()))
@@ -127,6 +132,39 @@ pub fn semicolon_end_parse(s: &str) -> IResult<&str, Vec<Node>> {
     Ok((s, vec![]))
 }
 
+// yang-version-stmt   = yang-version-keyword sep yang-version-arg-str
+// stmtend
+//
+// yang-version-arg-str = < a string that matches the rule >
+// < yang-version-arg >
+//
+// yang-version-arg    = "1.1"
+fn yang_version_arg_parse(s: &str) -> IResult<&str, &str> {
+    let (s, v) = alt((tag("1.1"), tag("1")))(s)?;
+    Ok((s, v))
+}
+
+fn yang_version_arg_auote_parse(s: &str) -> IResult<&str, &str> {
+    let (s, v) = delimited(tag("\""), yang_version_arg_parse, tag("\""))(s)?;
+    Ok((s, v))
+}
+
+fn yang_version_token_parse(s: &str) -> IResult<&str, &str> {
+    let (s, v) = alt((yang_version_arg_parse, yang_version_arg_auote_parse))(s)?;
+    Ok((s, v))
+}
+
+fn yang_version_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("yang-version")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = yang_version_token_parse(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let node = YangVersionNode::new(v.to_owned());
+    Ok((s, Node::YangVersion(Box::new(node))))
+}
+
 fn module_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, k) = alt((
@@ -173,6 +211,7 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
     let (s, mut nodes) = many0(alt((
+        yang_version_parse,
         module_parse,
         revision_parse,
         c_comment_parse,
@@ -215,6 +254,48 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn yang_version_arg_parse_test() {
+        for literal in vec!["1", "1.1"] {
+            match yang_version_arg_parse(literal) {
+                Ok((_, v)) => {
+                    assert_eq!(v, literal);
+                }
+                Err(e) => {
+                    panic!("identifier {}", e);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn yang_version_token_parse_test() {
+        for (literal, output) in vec![("1", "1"), ("1.1", "1.1"), (r#""1""#, "1")] {
+            match yang_version_token_parse(literal) {
+                Ok((_, v)) => {
+                    assert_eq!(v, output);
+                }
+                Err(e) => {
+                    panic!("identifier {}", e);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn double_quoted_string_test() {
+        let literal = r#""hoge\thoga\nhoge""#;
+        let output = r#"hoge\thoga\nhoge"#;
+        match double_quoted_string(literal) {
+            Ok((_, o)) => {
+                assert_eq!(o, output);
+            }
+            Err(e) => {
+                panic!("double_quoted_string_test {}", e);
+            }
+        }
+    }
 
     #[test]
     fn quoted_string_list_test() {

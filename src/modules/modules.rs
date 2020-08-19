@@ -49,6 +49,23 @@ impl Modules {
     }
 }
 
+#[derive(Debug)]
+pub enum YangVersion {
+    V1,
+    V1_1,
+}
+
+impl Default for YangVersion {
+    fn default() -> Self {
+        YangVersion::V1
+    }
+}
+
+#[derive(Debug, Default, PartialEq, new)]
+pub struct YangVersionNode {
+    pub name: String,
+}
+
 #[derive(Default, Debug)]
 pub struct Module {
     pub name: String,
@@ -59,6 +76,7 @@ pub struct Module {
     pub description: Option<String>,
     pub revisions: Vec<RevisionNode>,
     pub typedefs: HashMap<String, TypedefNode>,
+    pub yang_version: YangVersion,
 }
 
 impl Module {

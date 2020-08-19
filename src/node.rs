@@ -16,4 +16,5 @@ pub enum Node {
     Revision(Box<RevisionNode>),
     Typedef(Box<TypedefNode>),
     Default(Box<DefaultNode>),
+    YangVersion(Box<YangVersionNode>),
 }
