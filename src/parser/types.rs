@@ -156,13 +156,22 @@ fn length_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, v) = double_quoted_string(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
+    Ok((s, (k, v)))
+}
 
+fn path_parse(s: &str) -> IResult<&str, (&str, &str)> {
+    let (s, _) = multispace0(s)?;
+    let (s, k) = tag("path")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
     Ok((s, (k, v)))
 }
 
 fn type_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
-    let (s, _) = many0(alt((pattern_parse, length_parse)))(s)?;
+    let (s, _) = many0(alt((pattern_parse, length_parse, path_parse)))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     Ok((s, vec![]))
