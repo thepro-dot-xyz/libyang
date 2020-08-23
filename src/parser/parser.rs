@@ -212,9 +212,25 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
 // import b {
 //     revision-date 2015-01-01;
 // }
+fn prefix_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("prefix")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = alt((double_quoted_string, identifier))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let n = PrefixNode::new(v.to_owned());
+    Ok((s, Node::Prefix(Box::new(n))))
+}
+
 pub fn import_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
-    let (s, nodes) = many0(alt((description_parse, reference_parse)))(s)?;
+    let (s, nodes) = many0(alt((
+        prefix_parse,
+        description_parse,
+        reference_parse,
+        revision_date_stmt_parse,
+    )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     Ok((s, nodes))
