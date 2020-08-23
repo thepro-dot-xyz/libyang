@@ -20,4 +20,6 @@ pub enum Node {
     Import(Box<ImportNode>),
     Include(Box<IncludeNode>),
     RevisionDate(Box<RevisionDateNode>),
+    Identity(Box<IdentityNode>),
+    Feature(Box<FeatureNode>),
 }

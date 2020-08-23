@@ -156,3 +156,17 @@ pub struct IncludeNode {
 pub struct RevisionDateNode {
     pub name: String,
 }
+
+#[derive(Debug, PartialEq, new)]
+pub struct IdentityNode {
+    pub name: String,
+    #[new(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, PartialEq, new)]
+pub struct FeatureNode {
+    pub name: String,
+    #[new(default)]
+    pub description: Option<String>,
+}

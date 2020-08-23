@@ -268,6 +268,79 @@ pub fn import_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Import(Box::new(node))))
 }
 
+// +--------------+---------+-------------+
+// | substatement | section | cardinality |
+// +--------------+---------+-------------+
+// | base         | 7.18.2  | 0..n        |
+// | description  | 7.21.3  | 0..1        |
+// | if-feature   | 7.20.2  | 0..n        |
+// | reference    | 7.21.4  | 0..1        |
+// | status       | 7.21.2  | 0..1        |
+// +--------------+---------+-------------+
+pub fn identity_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("identity")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, mut subs) = alt((import_sub_parse, semicolon_end_parse))(s)?;
+    let mut node = ImportNode::new(String::from(v));
+    while let Some(sub) = subs.pop() {
+        match sub {
+            Node::Prefix(n) => {
+                node.prefix = n.name.to_owned();
+            }
+            Node::Description(n) => {
+                node.description = Some(n.name.to_owned());
+            }
+            Node::Reference(n) => {
+                node.reference = Some(n.name.to_owned());
+            }
+            Node::RevisionDate(n) => {
+                node.revision_date = n.name.to_owned();
+            }
+            _ => {}
+        }
+    }
+    Ok((s, Node::Import(Box::new(node))))
+}
+
+// +--------------+---------+-------------+
+// | substatement | section | cardinality |
+// +--------------+---------+-------------+
+// | description  | 7.21.3  | 0..1        |
+// | if-feature   | 7.20.2  | 0..n        |
+// | reference    | 7.21.4  | 0..1        |
+// | status       | 7.21.2  | 0..1        |
+// +--------------+---------+-------------+
+pub fn feature_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("feature")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, mut subs) = alt((import_sub_parse, semicolon_end_parse))(s)?;
+    let mut node = ImportNode::new(String::from(v));
+    while let Some(sub) = subs.pop() {
+        match sub {
+            Node::Prefix(n) => {
+                node.prefix = n.name.to_owned();
+            }
+            Node::Description(n) => {
+                node.description = Some(n.name.to_owned());
+            }
+            Node::Reference(n) => {
+                node.reference = Some(n.name.to_owned());
+            }
+            Node::RevisionDate(n) => {
+                node.revision_date = n.name.to_owned();
+            }
+            _ => {}
+        }
+    }
+    Ok((s, Node::Import(Box::new(node))))
+}
+
 pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
@@ -282,6 +355,8 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
         c_comment_parse,
         typedef_parse,
         import_parse,
+        identity_parse,
+        feature_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
