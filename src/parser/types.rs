@@ -160,7 +160,7 @@ fn length_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
-fn pattern_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
+fn type_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
     let (s, _) = many0(alt((pattern_parse, length_parse)))(s)?;
     let (s, _) = multispace0(s)?;
@@ -214,7 +214,7 @@ fn type_string_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace1(s)?;
     let (s, _) = tag("string")(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = alt((pattern_sub_parse, semicolon_end_parse))(s)?;
+    let (s, _) = alt((type_sub_parse, semicolon_end_parse))(s)?;
     Ok((s, Node::EmptyNode))
 }
 
@@ -264,7 +264,7 @@ fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace1(s)?;
     let (s, _) = path_identifier(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = alt((pattern_sub_parse, semicolon_end_parse))(s)?;
+    let (s, _) = alt((type_sub_parse, semicolon_end_parse))(s)?;
 
     Ok((s, Node::EmptyNode))
 }
@@ -275,7 +275,7 @@ fn type_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace1(s)?;
     let (s, _) = identifier(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = alt((pattern_sub_parse, semicolon_end_parse))(s)?;
+    let (s, _) = alt((type_sub_parse, semicolon_end_parse))(s)?;
 
     Ok((s, Node::EmptyNode))
 }
