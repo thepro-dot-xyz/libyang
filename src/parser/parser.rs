@@ -174,7 +174,6 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, k) = alt((
         tag("namespace"),
-        tag("prefix"),
         tag("organization"),
         tag("contact"),
         tag("description"),
@@ -187,10 +186,6 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
         "namespace" => {
             let n = NamespaceNode::new(v.to_owned());
             Node::Namespace(Box::new(n))
-        }
-        "prefix" => {
-            let n = PrefixNode::new(v.to_owned());
-            Node::Prefix(Box::new(n))
         }
         "organization" => {
             let n = OrganizationNode::new(v.to_owned());
@@ -270,6 +265,7 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, mut nodes) = many0(alt((
         yang_version_parse,
         module_parse,
+        prefix_parse,
         revision_parse,
         c_comment_parse,
         typedef_parse,
@@ -363,23 +359,17 @@ mod tests {
     }
 
     #[test]
-    fn module_parse_test() {
+    fn prefix_parse_test() {
         let literal = r#"prefix if;"#;
-        println!("XXX {}", literal);
-        let (_, v) = module_parse(literal).unwrap();
-        println!("{:?}", v);
-
+        let (_, v) = prefix_parse(literal).unwrap();
         let node = PrefixNode::new(String::from("if"));
         assert_eq!(v, Node::Prefix(Box::new(node)));
     }
 
     #[test]
-    fn module_parse_quote_test() {
+    fn prefix_parse_quote_test() {
         let literal = r#"prefix "if";"#;
-        println!("XXX {}", literal);
-        let (_, v) = module_parse(literal).unwrap();
-        println!("{:?}", v);
-
+        let (_, v) = prefix_parse(literal).unwrap();
         let node = PrefixNode::new(String::from("if"));
         assert_eq!(v, Node::Prefix(Box::new(node)));
     }
