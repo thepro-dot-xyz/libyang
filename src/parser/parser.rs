@@ -209,6 +209,42 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, node))
 }
 
+// import b {
+//     revision-date 2015-01-01;
+// }
+pub fn import_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
+    let (s, _) = char('{')(s)?;
+    let (s, nodes) = many0(alt((description_parse, reference_parse)))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, nodes))
+}
+
+pub fn import_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("import")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _subs) = alt((import_sub_parse, semicolon_end_parse))(s)?;
+
+    // if let Node::Revision(mut node) = v {
+    //     for sub in &subs {
+    //         match sub {
+    //             Node::Description(n) => {
+    //                 node.description = Some(n.name.to_owned());
+    //             }
+    //             Node::Reference(n) => {
+    //                 node.reference = Some(n.name.to_owned());
+    //             }
+    //             _ => {}
+    //         }
+    //     }
+    //     return Ok((s, Node::Revision(node)));
+    // }
+    Ok((s, Node::EmptyNode))
+}
+
 pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
@@ -221,6 +257,7 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
         revision_parse,
         c_comment_parse,
         typedef_parse,
+        import_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;

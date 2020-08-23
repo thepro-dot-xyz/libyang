@@ -1,12 +1,14 @@
-use crate::modules::RevisionNode;
+use crate::modules::{RevisionDateNode, RevisionNode};
 use crate::parser::*;
 use crate::Node;
 
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while_m_n};
 use nom::character::complete::{char, multispace0, multispace1};
+use nom::error::{make_error, ErrorKind};
 use nom::multi::many0;
 use nom::sequence::delimited;
+use nom::Err;
 use nom::IResult;
 
 // YYYY-MM-DD format.
@@ -61,6 +63,21 @@ pub fn revision_parse(s: &str) -> IResult<&str, Node> {
         return Ok((s, Node::Revision(node)));
     }
     Ok((s, Node::EmptyNode))
+}
+
+// For import/include.
+pub fn revision_date_stmt_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("revision-date")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = revision_date_token_parse(s)?;
+    let (s, _) = multispace0(s)?;
+    if let Node::Revision(n) = v {
+        let node = RevisionDateNode::new(n.name);
+        Ok((s, Node::RevisionDate(Box::new(node))))
+    } else {
+        Err(Err::Error(make_error(s, ErrorKind::Fix)))
+    }
 }
 
 #[cfg(test)]
@@ -137,6 +154,21 @@ mod tests {
         let node = Node::Revision(Box::new(n));
 
         let (_, v) = revision_parse(revision).unwrap();
+        assert_eq!(v, node);
+    }
+
+    #[test]
+    fn revision_date_statement_test() {
+        let revision = r#"
+        revision-date 2018-02-20;
+        "#;
+
+        let n = RevisionDateNode {
+            name: String::from("2018-02-20"),
+        };
+        let node = Node::RevisionDate(Box::new(n));
+
+        let (_, v) = revision_date_stmt_parse(revision).unwrap();
         assert_eq!(v, node);
     }
 }

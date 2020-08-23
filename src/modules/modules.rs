@@ -77,6 +77,8 @@ pub struct Module {
     pub revisions: Vec<RevisionNode>,
     pub typedefs: HashMap<String, TypedefNode>,
     pub yang_version: YangVersion,
+    pub imports: Vec<ImportNode>,
+    pub includes: Vec<IncludeNode>,
 }
 
 impl Module {
@@ -126,4 +128,27 @@ pub struct RevisionNode {
     pub description: Option<String>,
     #[new(default)]
     pub reference: Option<String>,
+}
+
+#[derive(Debug, PartialEq, new)]
+pub struct ImportNode {
+    pub name: String,
+    #[new(default)]
+    pub description: Option<String>,
+    #[new(default)]
+    pub reference: Option<String>,
+}
+
+#[derive(Debug, PartialEq, new)]
+pub struct IncludeNode {
+    pub name: String,
+    #[new(default)]
+    pub description: Option<String>,
+    #[new(default)]
+    pub reference: Option<String>,
+}
+
+#[derive(Debug, PartialEq, new)]
+pub struct RevisionDateNode {
+    pub name: String,
 }

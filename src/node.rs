@@ -17,4 +17,7 @@ pub enum Node {
     Typedef(Box<TypedefNode>),
     Default(Box<DefaultNode>),
     YangVersion(Box<YangVersionNode>),
+    Import(Box<ImportNode>),
+    Include(Box<IncludeNode>),
+    RevisionDate(Box<RevisionDateNode>),
 }
