@@ -180,7 +180,7 @@ fn module_parse(s: &str) -> IResult<&str, Node> {
         tag("description"),
     ))(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, v) = double_quoted_string(s)?;
+    let (s, v) = alt((double_quoted_string, identifier))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
     let node = match k {
@@ -307,6 +307,28 @@ mod tests {
         let literal = r#"'collection abc' + 'hogehoge'"#;
         let (_, v) = quoted_string_list(literal).unwrap();
         assert_eq!(v, "collection abchogehoge");
+    }
+
+    #[test]
+    fn module_parse_test() {
+        let literal = r#"prefix if;"#;
+        println!("XXX {}", literal);
+        let (_, v) = module_parse(literal).unwrap();
+        println!("{:?}", v);
+
+        let node = PrefixNode::new(String::from("if"));
+        assert_eq!(v, Node::Prefix(Box::new(node)));
+    }
+
+    #[test]
+    fn module_parse_quote_test() {
+        let literal = r#"prefix "if";"#;
+        println!("XXX {}", literal);
+        let (_, v) = module_parse(literal).unwrap();
+        println!("{:?}", v);
+
+        let node = PrefixNode::new(String::from("if"));
+        assert_eq!(v, Node::Prefix(Box::new(node)));
     }
 
     // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
