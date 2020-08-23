@@ -231,29 +231,41 @@ pub fn import_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     Ok((s, nodes))
 }
 
+// The import's Substatements
+// +---------------+---------+-------------+
+// | substatement  | section | cardinality |
+// +---------------+---------+-------------+
+// | description   | 7.21.3  | 0..1        |
+// | prefix        | 7.1.4   | 1           |
+// | reference     | 7.21.4  | 0..1        |
+// | revision-date | 7.1.5.1 | 0..1        |
+// +---------------+---------+-------------+
 pub fn import_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("import")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, _v) = identifier(s)?;
+    let (s, v) = identifier(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _subs) = alt((import_sub_parse, semicolon_end_parse))(s)?;
-
-    // if let Node::Revision(mut node) = v {
-    //     for sub in &subs {
-    //         match sub {
-    //             Node::Description(n) => {
-    //                 node.description = Some(n.name.to_owned());
-    //             }
-    //             Node::Reference(n) => {
-    //                 node.reference = Some(n.name.to_owned());
-    //             }
-    //             _ => {}
-    //         }
-    //     }
-    //     return Ok((s, Node::Revision(node)));
-    // }
-    Ok((s, Node::EmptyNode))
+    let (s, mut subs) = alt((import_sub_parse, semicolon_end_parse))(s)?;
+    let mut node = ImportNode::new(String::from(v));
+    while let Some(sub) = subs.pop() {
+        match sub {
+            Node::Prefix(n) => {
+                node.prefix = n.name.to_owned();
+            }
+            Node::Description(n) => {
+                node.description = Some(n.name.to_owned());
+            }
+            Node::Reference(n) => {
+                node.reference = Some(n.name.to_owned());
+            }
+            Node::RevisionDate(n) => {
+                node.revision_date = n.name.to_owned();
+            }
+            _ => {}
+        }
+    }
+    Ok((s, Node::Import(Box::new(node))))
 }
 
 pub fn yang_parse(s: &str) -> IResult<&str, Module> {

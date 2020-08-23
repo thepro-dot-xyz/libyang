@@ -134,9 +134,13 @@ pub struct RevisionNode {
 pub struct ImportNode {
     pub name: String,
     #[new(default)]
+    pub prefix: String,
+    #[new(default)]
     pub description: Option<String>,
     #[new(default)]
     pub reference: Option<String>,
+    #[new(default)]
+    pub revision_date: String,
 }
 
 #[derive(Debug, PartialEq, new)]
