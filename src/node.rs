@@ -22,4 +22,5 @@ pub enum Node {
     RevisionDate(Box<RevisionDateNode>),
     Identity(Box<IdentityNode>),
     Feature(Box<FeatureNode>),
+    Container(Box<ContainerNode>),
 }
