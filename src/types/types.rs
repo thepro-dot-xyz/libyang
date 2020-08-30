@@ -1,5 +1,36 @@
 use crate::Node;
 
+#[derive(Debug, PartialEq)]
+pub enum TypeKind {
+    Ynone,
+    // Yint8,
+    // Yenum,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct TypeNode {
+    pub kind: TypeKind,
+    pub name: String,
+}
+
+impl Default for TypeNode {
+    fn default() -> Self {
+        Self {
+            name: String::from(""),
+            kind: TypeKind::Ynone,
+        }
+    }
+}
+
+impl TypeNode {
+    pub fn new(kind: TypeKind) -> Self {
+        TypeNode {
+            kind: kind,
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Default, PartialEq)]
 pub struct TypedefNode {
     pub name: String,
@@ -47,37 +78,6 @@ impl EnumerationNode {
             nodes: (nodes,),
             min: 0,
             max: 0,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum TypeKind {
-    Ynone,
-    // Yint8,
-    // Yenum,
-}
-
-#[derive(Debug)]
-pub struct YangType {
-    pub name: String,
-    pub kind: TypeKind,
-}
-
-impl Default for YangType {
-    fn default() -> Self {
-        Self {
-            name: String::from(""),
-            kind: TypeKind::Ynone,
-        }
-    }
-}
-
-impl YangType {
-    pub fn new(kind: TypeKind) -> Self {
-        YangType {
-            kind: kind,
-            ..Default::default()
         }
     }
 }

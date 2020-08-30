@@ -558,4 +558,14 @@ mod tests {
         let result = escape_code(literal).unwrap();
         assert_eq!(result.1, "\\n");
     }
+
+    #[test]
+    fn test_identityref_parse() {
+        let literal = r#"
+        type identityref {
+            base interface-type;
+        }"#;
+        let result = type_identityref_parse(literal);
+        println!("XXX {:?}", result);
+    }
 }
