@@ -341,6 +341,89 @@ pub fn feature_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Import(Box::new(node))))
 }
 
+pub fn leaf_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
+    let (s, _) = char('{')(s)?;
+    let (s, nodes) = many0(alt((description_parse, reference_parse, type_string_parse)))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, nodes))
+}
+
+pub fn leaf_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("leaf")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _subs) = alt((leaf_sub_parse, semicolon_end_parse))(s)?;
+    let node = LeafNode::new(String::from(v));
+    println!("XXX {}", v);
+    Ok((s, Node::Leaf(Box::new(node))))
+}
+
+pub fn key_parse(s: &str) -> IResult<&str, Node> {
+    let (s, v) = single_statement_parse(s, String::from("key"))?;
+    let node = KeyNode::new(v.to_owned());
+    Ok((s, Node::Key(Box::new(node))))
+}
+
+pub fn list_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
+    let (s, _) = char('{')(s)?;
+    let (s, nodes) = many0(alt((description_parse, key_parse, leaf_parse)))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, nodes))
+}
+
+pub fn list_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("list")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _subs) = alt((list_sub_parse, semicolon_end_parse))(s)?;
+    let node = ListNode::new(String::from(v));
+    println!("XXX {}", v);
+    Ok((s, Node::List(Box::new(node))))
+}
+
+pub fn container_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
+    let (s, _) = char('{')(s)?;
+    let (s, nodes) = many0(alt((description_parse, list_parse)))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, nodes))
+}
+
+pub fn container_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("container")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _subs) = alt((container_sub_parse, semicolon_end_parse))(s)?;
+    let node = ContainerNode::new(String::from(v));
+
+    // while let Some(sub) = subs.pop() {
+    //     match sub {
+    //         Node::Prefix(n) => {
+    //             node.prefix = n.name.to_owned();
+    //         }
+    //         Node::Description(n) => {
+    //             node.description = Some(n.name.to_owned());
+    //         }
+    //         Node::Reference(n) => {
+    //             node.reference = Some(n.name.to_owned());
+    //         }
+    //         Node::RevisionDate(n) => {
+    //             node.revision_date = n.name.to_owned();
+    //         }
+    //         _ => {}
+    //     }
+    // }
+    Ok((s, Node::Container(Box::new(node))))
+}
+
 pub fn yang_parse(s: &str) -> IResult<&str, Module> {
     let (s, _) = tag("module")(s)?;
     let (s, _) = multispace1(s)?;
@@ -357,6 +440,7 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
         import_parse,
         identity_parse,
         feature_parse,
+        container_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;

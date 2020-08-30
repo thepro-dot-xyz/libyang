@@ -26,4 +26,5 @@ pub enum Node {
     List(Box<ListNode>),
     Key(Box<KeyNode>),
     Leaf(Box<LeafNode>),
+    Base(Box<BaseNode>),
 }

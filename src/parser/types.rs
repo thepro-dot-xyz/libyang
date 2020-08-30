@@ -217,7 +217,7 @@ fn type_uint64_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-fn type_string_parse(s: &str) -> IResult<&str, Node> {
+pub fn type_string_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -235,6 +235,39 @@ fn type_enumeration_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
     let (s, enums) = many0(enum_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+
+    let node = EnumerationNode::new(enums);
+
+    Ok((s, Node::EnumerationNode(Box::new(node))))
+}
+
+// Single statement 'keyword: identity;'
+pub fn single_identity_parse(s: &str, key: String) -> IResult<&str, &str> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag(key.as_str())(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    Ok((s, v))
+}
+
+fn base_parse(s: &str) -> IResult<&str, Node> {
+    let (s, v) = single_identity_parse(s, String::from("base"))?;
+    let node = BaseNode::new(v.to_owned());
+    Ok((s, Node::Base(Box::new(node))))
+}
+
+pub fn type_identityref_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("identityref")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('{')(s)?;
+    let (s, enums) = many0(base_parse)(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 

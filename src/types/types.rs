@@ -86,3 +86,8 @@ impl YangType {
 pub struct DefaultNode {
     pub name: String,
 }
+
+#[derive(Debug, PartialEq, new)]
+pub struct BaseNode {
+    pub name: String,
+}
