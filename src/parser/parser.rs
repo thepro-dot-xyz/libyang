@@ -397,7 +397,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn yang_version_arg_parse_test() {
+    fn test_yang_version_arg_parse() {
         for literal in vec!["1", "1.1"] {
             match yang_version_arg_parse(literal) {
                 Ok((_, v)) => {
@@ -411,7 +411,7 @@ mod tests {
     }
 
     #[test]
-    fn yang_version_token_parse_test() {
+    fn test_yang_version_token_parse() {
         for (literal, output) in vec![("1", "1"), ("1.1", "1.1"), (r#""1""#, "1")] {
             match yang_version_arg_str_parse(literal) {
                 Ok((_, v)) => {
@@ -425,7 +425,7 @@ mod tests {
     }
 
     #[test]
-    fn double_quoted_string_test() {
+    fn test_double_quoted_string() {
         let literal = r#""hoge\thoga\nhoge""#;
         let output = r#"hoge\thoga\nhoge"#;
         match double_quoted_string(literal) {
@@ -439,14 +439,14 @@ mod tests {
     }
 
     #[test]
-    fn quoted_string_list_test() {
+    fn test_quoted_string_list() {
         let literal = r#"'collection abc' + 'hogehoge'"#;
         let (_, v) = quoted_string_list(literal).unwrap();
         assert_eq!(v, "collection abchogehoge");
     }
 
     #[test]
-    fn prefix_parse_test() {
+    fn test_prefix_parse() {
         let literal = r#"prefix if;"#;
         let (_, v) = prefix_parse(literal).unwrap();
         let node = PrefixNode::new(String::from("if"));
@@ -454,7 +454,7 @@ mod tests {
     }
 
     #[test]
-    fn prefix_parse_quote_test() {
+    fn test_prefix_parse_quote() {
         let literal = r#"prefix "if";"#;
         let (_, v) = prefix_parse(literal).unwrap();
         let node = PrefixNode::new(String::from("if"));
@@ -462,14 +462,14 @@ mod tests {
     }
 
     #[test]
-    fn nonescaped_string_test() {
+    fn test_nonescaped_string() {
         let literal = r#"main-routine_1 "#;
         let result = nonescaped_string(literal).unwrap();
         assert_eq!(result.1, "main-routine_1 ");
     }
 
     #[test]
-    fn escape_code_test() {
+    fn test_escape_code() {
         let literal = r"\na";
         let result = escape_code(literal).unwrap();
         assert_eq!(result.1, "\\n");
