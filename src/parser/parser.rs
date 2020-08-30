@@ -461,25 +461,17 @@ mod tests {
         assert_eq!(v, Node::Prefix(Box::new(node)));
     }
 
-    // let literal = "\"urn:ietf:params:xml:ns:yang:ietf-inet-types\"";
-    // println!("{}", literal);
+    #[test]
+    fn nonescaped_string_test() {
+        let literal = r#"main-routine_1 "#;
+        let result = nonescaped_string(literal).unwrap();
+        assert_eq!(result.1, "main-routine_1 ");
+    }
 
-    // let literal = r"\na";
-    // let result = escape_code(literal);
-    // println!("{:?}", result);
-
-    // let literal = r#"main-routine_1 "#;
-    // let result = nonescaped_string(literal);
-    // println!("{:?}", result);
-
-    // let literal = r#""hoge\thoga\nhoge""#;
-    // println!("l: {:?}", literal);
-    // match double_quoted_string(literal) {
-    //     Ok((_, o)) => {
-    //         println!("output: {}", o);
-    //     }
-    //     Err(e) => {
-    //         println!("{}", e);
-    //     }
-    // }
+    #[test]
+    fn escape_code_test() {
+        let literal = r"\na";
+        let result = escape_code(literal).unwrap();
+        assert_eq!(result.1, "\\n");
+    }
 }
