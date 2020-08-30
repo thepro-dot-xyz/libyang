@@ -23,4 +23,7 @@ pub enum Node {
     Identity(Box<IdentityNode>),
     Feature(Box<FeatureNode>),
     Container(Box<ContainerNode>),
+    List(Box<ListNode>),
+    Key(Box<KeyNode>),
+    Leaf(Box<LeafNode>),
 }
