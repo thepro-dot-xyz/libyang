@@ -3,7 +3,9 @@ use crate::Node;
 #[derive(Debug, PartialEq)]
 pub enum TypeKind {
     Ynone,
-    // Yint8,
+    Yint8,
+    Yint16,
+    Yint32,
     // Yenum,
 }
 
@@ -29,6 +31,8 @@ impl TypeNode {
             ..Default::default()
         }
     }
+
+    pub fn match_with(_str: &str) {}
 }
 
 #[derive(Debug, Default, PartialEq)]

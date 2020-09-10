@@ -184,7 +184,9 @@ fn type_uint8_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = tag("uint8")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-    Ok((s, Node::EmptyNode))
+
+    let node = TypeNode::new(TypeKind::Yint8);
+    Ok((s, Node::Type(Box::new(node))))
 }
 
 fn type_uint16_parse(s: &str) -> IResult<&str, Node> {
@@ -194,7 +196,9 @@ fn type_uint16_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = tag("uint16")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-    Ok((s, Node::EmptyNode))
+
+    let node = TypeNode::new(TypeKind::Yint16);
+    Ok((s, Node::Type(Box::new(node))))
 }
 
 fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
@@ -204,7 +208,9 @@ fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = tag("uint32")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-    Ok((s, Node::EmptyNode))
+
+    let node = TypeNode::new(TypeKind::Yint32);
+    Ok((s, Node::Type(Box::new(node))))
 }
 
 fn type_uint64_parse(s: &str) -> IResult<&str, Node> {
