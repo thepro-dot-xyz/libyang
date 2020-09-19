@@ -5,8 +5,10 @@ use nom::branch::{alt, permutation};
 use nom::bytes::complete::{tag, take_until, take_while, take_while1};
 use nom::character::complete::{anychar, char, multispace0, multispace1, none_of};
 use nom::combinator::{recognize, verify};
+use nom::error::{make_error, ErrorKind};
 use nom::multi::{many0, separated_list};
 use nom::sequence::{delimited, pair};
+use nom::Err;
 use nom::IResult;
 
 // RFC7950 6.2.  Identifiers
@@ -95,6 +97,15 @@ pub fn quoted_string_list(s: &str) -> IResult<&str, String> {
     Ok((s, v.into_iter().collect()))
 }
 
+pub fn boolean_parse(s: &str) -> IResult<&str, bool> {
+    let (s, v) = alt((tag("true"), tag("false")))(s)?;
+    match v {
+        "true" => Ok((s, true)),
+        "false" => Ok((s, false)),
+        _ => Err(Err::Error(make_error(s, ErrorKind::Fix))),
+    }
+}
+
 pub fn c_comment_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("/*")(s)?;
@@ -125,6 +136,41 @@ pub fn reference_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_statement_parse(s, String::from("reference"))?;
     let node = ReferenceNode::new(v.to_owned());
     Ok((s, Node::Reference(Box::new(node))))
+}
+
+pub fn mandatory_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("mandatory")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = boolean_parse(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let mut node = MandatoryNode::new(String::from("mandatory"));
+    node.mandatory = v;
+    Ok((s, Node::Mandatory(Box::new(node))))
+}
+
+pub fn config_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("config")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = boolean_parse(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let mut node = ConfigNode::new(String::from("config"));
+    node.config = v;
+    Ok((s, Node::Config(Box::new(node))))
+}
+
+pub fn if_feature_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("if-feature")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let node = MandatoryNode::new(v.to_owned());
+    Ok((s, Node::Mandatory(Box::new(node))))
 }
 
 pub fn semicolon_end_parse(s: &str) -> IResult<&str, Vec<Node>> {
@@ -343,7 +389,22 @@ pub fn feature_parse(s: &str) -> IResult<&str, Node> {
 
 pub fn leaf_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
-    let (s, nodes) = many0(alt((description_parse, reference_parse, type_string_parse)))(s)?;
+    let (s, nodes) = many0(alt((
+        description_parse,
+        reference_parse,
+        type_string_parse,
+        type_identityref_parse,
+        type_boolean_parse,
+        type_enumeration_parse,
+        type_path_identifier_parse,
+        type_int32_parse,
+        type_uint32_parse,
+        type_identifier_parse,
+        mandatory_parse,
+        config_parse,
+        default_parse,
+        if_feature_parse,
+    )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     Ok((s, nodes))
@@ -361,6 +422,18 @@ pub fn leaf_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Leaf(Box::new(node))))
 }
 
+pub fn leaf_list_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("leaf-list")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = identifier(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _subs) = alt((leaf_sub_parse, semicolon_end_parse))(s)?;
+    let node = LeafListNode::new(String::from(v));
+    println!("XXX {}", v);
+    Ok((s, Node::LeafList(Box::new(node))))
+}
+
 pub fn key_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_statement_parse(s, String::from("key"))?;
     let node = KeyNode::new(v.to_owned());
@@ -369,7 +442,12 @@ pub fn key_parse(s: &str) -> IResult<&str, Node> {
 
 pub fn list_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
-    let (s, nodes) = many0(alt((description_parse, key_parse, leaf_parse)))(s)?;
+    let (s, nodes) = many0(alt((
+        description_parse,
+        key_parse,
+        leaf_parse,
+        leaf_list_parse,
+    )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     Ok((s, nodes))
@@ -566,6 +644,21 @@ mod tests {
             base interface-type;
         }"#;
         let result = type_identityref_parse(literal);
-        println!("XXX {:?}", result);
+        println!("XXX test_identityref_parse: {:?}", result);
+    }
+
+    #[test]
+    fn test_boolean_parse() {
+        let literal = "true";
+        let result = boolean_parse(literal);
+        assert_eq!(result, Ok(("", true)));
+
+        let literal = "false";
+        let result = boolean_parse(literal);
+        assert_eq!(result, Ok(("", false)));
+
+        let literal = "hoge";
+        let result = boolean_parse(literal);
+        assert_eq!(result, Err(Err::Error((literal, ErrorKind::Tag))));
     }
 }

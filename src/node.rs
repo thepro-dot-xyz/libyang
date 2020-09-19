@@ -26,6 +26,10 @@ pub enum Node {
     List(Box<ListNode>),
     Key(Box<KeyNode>),
     Leaf(Box<LeafNode>),
+    LeafList(Box<LeafListNode>),
     Base(Box<BaseNode>),
     Type(Box<TypeNode>),
+    Mandatory(Box<MandatoryNode>),
+    IfFeature(Box<IfFeatureNode>),
+    Config(Box<ConfigNode>),
 }

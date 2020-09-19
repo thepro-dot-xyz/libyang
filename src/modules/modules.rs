@@ -170,3 +170,22 @@ pub struct FeatureNode {
     #[new(default)]
     pub description: Option<String>,
 }
+
+#[derive(Debug, PartialEq, new)]
+pub struct MandatoryNode {
+    pub name: String,
+    #[new(default)]
+    pub mandatory: bool,
+}
+
+#[derive(Debug, PartialEq, new)]
+pub struct ConfigNode {
+    pub name: String,
+    #[new(default)]
+    pub config: bool,
+}
+
+#[derive(Debug, PartialEq, new)]
+pub struct IfFeatureNode {
+    pub name: String,
+}

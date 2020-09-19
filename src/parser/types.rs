@@ -2,7 +2,7 @@ use super::*;
 use crate::types::*;
 use crate::Node;
 use nom::branch::alt;
-use nom::bytes::complete::tag;
+use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::{char, multispace0, multispace1};
 use nom::multi::many0;
 use nom::IResult;
@@ -84,8 +84,21 @@ use nom::IResult;
 //     }
 // }
 
-fn value_parse(s: &str) -> IResult<&str, Node> {
-    let (s, v) = single_statement_parse(s, String::from("value"))?;
+fn is_digit_value(c: char) -> bool {
+    c.is_digit(10)
+}
+
+fn digit_parse(s: &str) -> IResult<&str, &str> {
+    take_while1(is_digit_value)(s)
+}
+
+pub fn value_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("value")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = alt((double_quoted_string, digit_parse))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
     let node = ValueNode {
         name: String::from(v),
         nodes: (),
@@ -177,6 +190,18 @@ fn type_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     Ok((s, vec![]))
 }
 
+pub fn type_int32_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("int32")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+
+    let node = TypeNode::new(TypeKind::Yint32);
+    Ok((s, Node::Type(Box::new(node))))
+}
+
 fn type_uint8_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
@@ -201,7 +226,7 @@ fn type_uint16_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Type(Box::new(node))))
 }
 
-fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
+pub fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -233,7 +258,17 @@ pub fn type_string_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-fn type_enumeration_parse(s: &str) -> IResult<&str, Node> {
+pub fn type_boolean_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag("boolean")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = alt((type_sub_parse, semicolon_end_parse))(s)?;
+    Ok((s, Node::EmptyNode))
+}
+
+pub fn type_enumeration_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -306,7 +341,7 @@ fn type_union_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EnumerationNode(Box::new(node))))
 }
 
-fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
+pub fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -317,7 +352,7 @@ fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-fn type_identifier_parse(s: &str) -> IResult<&str, Node> {
+pub fn type_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -373,11 +408,19 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
 
 #[cfg(test)]
 mod tests {
-    // use super::*;
+    use super::*;
 
     #[test]
     fn yang_type() {
         // let ytype = YangType::new(TypeKind::Yenum);
         // println!("{:?}", ytype);
+    }
+
+    #[test]
+    fn test_value_parse() {
+        let literal = "1a";
+        let result = value_parse(literal);
+        println!("XXX {:?}", result);
+        //assert_eq!(result, Ok(("", true)));
     }
 }
