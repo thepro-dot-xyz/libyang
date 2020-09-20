@@ -189,3 +189,8 @@ pub struct ConfigNode {
 pub struct IfFeatureNode {
     pub name: String,
 }
+
+#[derive(Debug, PartialEq, new)]
+pub struct UnitsNode {
+    pub name: String,
+}

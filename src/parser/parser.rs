@@ -387,6 +387,12 @@ pub fn feature_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Import(Box::new(node))))
 }
 
+pub fn units_parse(s: &str) -> IResult<&str, Node> {
+    let (s, v) = single_statement_parse(s, String::from("units"))?;
+    let n = UnitsNode::new(v.to_owned());
+    Ok((s, Node::Units(Box::new(n))))
+}
+
 pub fn leaf_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
     let (s, nodes) = many0(alt((
@@ -397,6 +403,7 @@ pub fn leaf_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
         config_parse,
         default_parse,
         if_feature_parse,
+        units_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
@@ -440,6 +447,7 @@ pub fn list_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
         key_parse,
         leaf_parse,
         leaf_list_parse,
+        container_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
@@ -460,7 +468,12 @@ pub fn list_parse(s: &str) -> IResult<&str, Node> {
 
 pub fn container_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
-    let (s, nodes) = many0(alt((description_parse, list_parse)))(s)?;
+    let (s, nodes) = many0(alt((
+        description_parse,
+        list_parse,
+        config_parse,
+        leaf_parse,
+    )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     Ok((s, nodes))
