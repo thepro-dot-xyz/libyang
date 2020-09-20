@@ -631,16 +631,6 @@ mod tests {
     }
 
     #[test]
-    fn test_identityref_parse() {
-        let literal = r#"
-        type identityref {
-            base interface-type;
-        }"#;
-        let result = type_identityref_parse(literal);
-        println!("XXX test_identityref_parse: {:?}", result);
-    }
-
-    #[test]
     fn test_boolean_parse() {
         let literal = "true";
         let result = boolean_parse(literal);

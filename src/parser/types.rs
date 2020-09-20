@@ -1,5 +1,5 @@
-use super::*;
 use crate::modules::*;
+use crate::parser::*;
 use crate::Node;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
@@ -421,5 +421,15 @@ mod tests {
         let result = value_parse(literal);
         println!("XXX {:?}", result);
         //assert_eq!(result, Ok(("", true)));
+    }
+
+    #[test]
+    fn test_identityref_parse() {
+        let literal = r#"
+        type identityref {
+            base interface-type;
+        }"#;
+        let result = type_identityref_parse(literal);
+        println!("XXX test_identityref_parse: {:?}", result);
     }
 }
