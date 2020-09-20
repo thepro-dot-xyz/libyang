@@ -144,7 +144,7 @@ fn range_parse(s: &str) -> IResult<&str, (&str, &str)> {
     Ok((s, (k, v)))
 }
 
-fn uint_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
+fn int_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
     let (s, _) = many0(range_parse)(s)?;
     let (s, _) = multispace0(s)?;
@@ -190,65 +190,51 @@ fn type_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     Ok((s, vec![]))
 }
 
-pub fn type_int32_parse(s: &str) -> IResult<&str, Node> {
+fn type_intx_parse(s: &str, type_string: String, type_kind: TypeKind) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, _) = tag("int32")(s)?;
+    let (s, _) = tag(type_string.as_str())(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+    let (s, _) = alt((int_sub_parse, semicolon_end_parse))(s)?;
 
-    let node = TypeNode::new(TypeKind::Yint32);
+    let node = TypeNode::new(type_kind);
     Ok((s, Node::Type(Box::new(node))))
+}
+
+fn type_int8_parse(s: &str) -> IResult<&str, Node> {
+    type_intx_parse(s, String::from("int8"), TypeKind::Yint8)
+}
+
+fn type_int16_parse(s: &str) -> IResult<&str, Node> {
+    type_intx_parse(s, String::from("int16"), TypeKind::Yint16)
+}
+
+fn type_int32_parse(s: &str) -> IResult<&str, Node> {
+    type_intx_parse(s, String::from("int32"), TypeKind::Yint32)
+}
+
+fn type_int64_parse(s: &str) -> IResult<&str, Node> {
+    type_intx_parse(s, String::from("int64"), TypeKind::Yint64)
 }
 
 fn type_uint8_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag("type")(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, _) = tag("uint8")(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-
-    let node = TypeNode::new(TypeKind::Yint8);
-    Ok((s, Node::Type(Box::new(node))))
+    type_intx_parse(s, String::from("uint8"), TypeKind::Yuint8)
 }
 
 fn type_uint16_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag("type")(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, _) = tag("uint16")(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-
-    let node = TypeNode::new(TypeKind::Yint16);
-    Ok((s, Node::Type(Box::new(node))))
+    type_intx_parse(s, String::from("uint16"), TypeKind::Yuint16)
 }
 
-pub fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag("type")(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, _) = tag("uint32")(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-
-    let node = TypeNode::new(TypeKind::Yint32);
-    Ok((s, Node::Type(Box::new(node))))
+fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
+    type_intx_parse(s, String::from("uint32"), TypeKind::Yuint32)
 }
 
 fn type_uint64_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag("type")(s)?;
-    let (s, _) = multispace1(s)?;
-    let (s, _) = tag("uint64")(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-    Ok((s, Node::EmptyNode))
+    type_intx_parse(s, String::from("uint64"), TypeKind::Yuint64)
 }
 
-pub fn type_string_parse(s: &str) -> IResult<&str, Node> {
+fn type_string_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -258,7 +244,7 @@ pub fn type_string_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-pub fn type_boolean_parse(s: &str) -> IResult<&str, Node> {
+fn type_boolean_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -268,7 +254,7 @@ pub fn type_boolean_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-pub fn type_enumeration_parse(s: &str) -> IResult<&str, Node> {
+fn type_enumeration_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -301,7 +287,7 @@ fn base_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Base(Box::new(node))))
 }
 
-pub fn type_identityref_parse(s: &str) -> IResult<&str, Node> {
+fn type_identityref_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -341,7 +327,7 @@ fn type_union_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EnumerationNode(Box::new(node))))
 }
 
-pub fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
+fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -352,7 +338,7 @@ pub fn type_path_identifier_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-pub fn type_identifier_parse(s: &str) -> IResult<&str, Node> {
+fn type_identifier_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -386,24 +372,37 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = char('{')(s)?;
     let (s, mut nodes) = many0(alt((
-        type_uint8_parse,
-        type_uint16_parse,
-        type_uint32_parse,
-        type_uint64_parse,
-        type_string_parse,
-        type_enumeration_parse,
-        type_union_parse,
-        type_path_identifier_parse,
-        type_identifier_parse,
         default_parse,
         description_parse,
         reference_parse,
+        types_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
 
     let node = TypedefNode::new(String::from(ident), find_type_node(&mut nodes));
     Ok((s, Node::Typedef(Box::new(node))))
+}
+
+// Parse type statements.
+pub fn types_parse(s: &str) -> IResult<&str, Node> {
+    alt((
+        type_int8_parse,
+        type_int16_parse,
+        type_int32_parse,
+        type_int64_parse,
+        type_uint8_parse,
+        type_uint16_parse,
+        type_uint32_parse,
+        type_uint64_parse,
+        type_string_parse,
+        type_boolean_parse,
+        type_enumeration_parse,
+        type_union_parse,
+        type_identifier_parse,
+        type_path_identifier_parse,
+        type_identityref_parse,
+    ))(s)
 }
 
 #[cfg(test)]

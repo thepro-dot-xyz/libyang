@@ -6,6 +6,11 @@ pub enum TypeKind {
     Yint8,
     Yint16,
     Yint32,
+    Yint64,
+    Yuint8,
+    Yuint16,
+    Yuint32,
+    Yuint64,
     // Yenum,
 }
 
