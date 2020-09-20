@@ -271,6 +271,8 @@ pub fn import_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
         description_parse,
         reference_parse,
         revision_date_stmt_parse,
+        base_parse,
+        status_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
@@ -530,6 +532,7 @@ pub fn yang_parse(s: &str) -> IResult<&str, Module> {
         yang_version_parse,
         module_parse,
         prefix_parse,
+        reference_parse,
         revision_parse,
         c_comment_parse,
         typedef_parse,

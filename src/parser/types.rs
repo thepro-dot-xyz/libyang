@@ -271,17 +271,17 @@ fn type_enumeration_parse(s: &str) -> IResult<&str, Node> {
 }
 
 // Single statement 'keyword: identity;'
-pub fn single_identity_parse(s: &str, key: String) -> IResult<&str, &str> {
+fn single_identity_parse(s: &str, key: String) -> IResult<&str, &str> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag(key.as_str())(s)?;
     let (s, _) = multispace1(s)?;
-    let (s, v) = identifier(s)?;
+    let (s, v) = alt((path_identifier, identifier))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
     Ok((s, v))
 }
 
-fn base_parse(s: &str) -> IResult<&str, Node> {
+pub fn base_parse(s: &str) -> IResult<&str, Node> {
     let (s, v) = single_identity_parse(s, String::from("base"))?;
     let node = BaseNode::new(v.to_owned());
     Ok((s, Node::Base(Box::new(node))))
@@ -421,6 +421,14 @@ mod tests {
         let literal = "1a";
         let result = value_parse(literal);
         println!("XXX test_value_parse: {:?}", result);
+        //assert_eq!(result, Ok(("", true)));
+    }
+
+    #[test]
+    fn test_base_parse() {
+        let literal = "base if:interface-type;";
+        let result = base_parse(literal);
+        println!("XXX test_base_parse: {:?}", result);
         //assert_eq!(result, Ok(("", true)));
     }
 
