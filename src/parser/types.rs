@@ -1,5 +1,5 @@
 use super::*;
-use crate::types::*;
+use crate::modules::*;
 use crate::Node;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};

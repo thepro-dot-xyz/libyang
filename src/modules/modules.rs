@@ -1,4 +1,4 @@
-use crate::types::*;
+use super::*;
 use std::collections::HashMap;
 
 // RFC7950 7.1.1.  The module's Substatements
