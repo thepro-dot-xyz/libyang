@@ -32,4 +32,5 @@ pub enum Node {
     IfFeature(Box<IfFeatureNode>),
     Config(Box<ConfigNode>),
     Units(Box<UnitsNode>),
+    Status(Box<StatusNode>),
 }

@@ -376,6 +376,7 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
         description_parse,
         reference_parse,
         types_parse,
+        status_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
@@ -419,7 +420,7 @@ mod tests {
     fn test_value_parse() {
         let literal = "1a";
         let result = value_parse(literal);
-        println!("XXX {:?}", result);
+        println!("XXX test_value_parse: {:?}", result);
         //assert_eq!(result, Ok(("", true)));
     }
 

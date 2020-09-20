@@ -404,6 +404,7 @@ pub fn leaf_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
         default_parse,
         if_feature_parse,
         units_parse,
+        status_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
@@ -418,7 +419,6 @@ pub fn leaf_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _subs) = alt((leaf_sub_parse, semicolon_end_parse))(s)?;
     let node = LeafNode::new(String::from(v));
-    println!("XXX {}", v);
     Ok((s, Node::Leaf(Box::new(node))))
 }
 
@@ -430,7 +430,6 @@ pub fn leaf_list_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _subs) = alt((leaf_sub_parse, semicolon_end_parse))(s)?;
     let node = LeafListNode::new(String::from(v));
-    println!("XXX {}", v);
     Ok((s, Node::LeafList(Box::new(node))))
 }
 
@@ -448,6 +447,7 @@ pub fn list_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
         leaf_parse,
         leaf_list_parse,
         container_parse,
+        status_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
@@ -462,8 +462,19 @@ pub fn list_parse(s: &str) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _subs) = alt((list_sub_parse, semicolon_end_parse))(s)?;
     let node = ListNode::new(String::from(v));
-    println!("XXX {}", v);
     Ok((s, Node::List(Box::new(node))))
+}
+
+// "status" parse.
+pub fn status_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("status")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = alt((tag("current"), tag("obsolete"), tag("deprecated")))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    let n = StatusNode::new(v.to_owned());
+    Ok((s, Node::Status(Box::new(n))))
 }
 
 pub fn container_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
@@ -473,6 +484,7 @@ pub fn container_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
         list_parse,
         config_parse,
         leaf_parse,
+        status_parse,
     )))(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
