@@ -4,7 +4,7 @@ use crate::Node;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::{char, digit0, multispace0, multispace1, one_of};
-use nom::combinator::recognize;
+use nom::combinator::{map, recognize};
 use nom::multi::many0;
 use nom::sequence::{pair, tuple};
 use nom::IResult;
@@ -400,16 +400,81 @@ fn uint_parse(input: &str) -> IResult<&str, &str> {
     alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
 }
 
-pub fn negative_parse(input: &str) -> IResult<&str, &str> {
+#[derive(Debug)]
+pub enum IntVal {
+    Min,
+    Max,
+    Val(i64),
+}
+
+#[derive(Debug)]
+pub enum UintVal {
+    Min,
+    Max,
+    Val(u64),
+}
+
+fn negative_parse(input: &str) -> IResult<&str, &str> {
     recognize(tuple((tag("-"), digit1to9, digit0)))(input)
 }
 
-pub fn int_parse(input: &str) -> IResult<&str, &str> {
+fn int_parse(input: &str) -> IResult<&str, &str> {
     alt((negative_parse, uint_parse))(input)
 }
 
-pub fn range_str_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = uint_parse(s)?;
+pub fn uint_parse_value(input: &'static str, mmax: &'static str) -> IResult<&'static str, UintVal> {
+    let parser = alt((tag(mmax), uint_parse));
+    map(parser, |s| match s {
+        "max" => UintVal::Max,
+        "min" => UintVal::Min,
+        x => {
+            let n = x.parse::<u64>().unwrap();
+            UintVal::Val(n)
+        }
+    })(input)
+}
+
+pub fn int_parse_value(input: &'static str, mmax: &'static str) -> IResult<&'static str, IntVal> {
+    let parser = alt((tag(mmax), int_parse));
+    map(parser, |s| match s {
+        "max" => IntVal::Max,
+        "min" => IntVal::Min,
+        x => {
+            let n = x.parse::<i64>().unwrap();
+            IntVal::Val(n)
+        }
+    })(input)
+}
+
+pub fn range_int_single_parse(s: &str) -> IResult<&str, &str> {
+    alt((tag("min"), tag("max"), int_parse))(s)
+}
+
+pub fn range_uint_single_parse(s: &str) -> IResult<&str, &str> {
+    alt((tag("min"), tag("max"), uint_parse))(s)
+}
+
+pub fn range_int_parse(s: &'static str) -> IResult<&'static str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, v1) = int_parse_value(s, "min")?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("..")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, v2) = int_parse_value(s, "max")?;
+    println!("v1 {:?}", v1);
+    println!("v2 {:?}", v2);
+    Ok((s, Node::EmptyNode))
+}
+
+pub fn range_uint_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, v1) = alt((tag("min"), uint_parse))(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("..")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, v2) = alt((tag("max"), uint_parse))(s)?;
+    println!("v1 {}", v1);
+    println!("v2 {}", v2);
     Ok((s, Node::EmptyNode))
 }
 
@@ -620,6 +685,44 @@ mod tests {
             let result = int_parse(t.input);
             assert_eq!(result, t.output);
         }
+    }
+
+    #[test]
+    fn test_range_uint_parse() {
+        let literal = "1 .. 20";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "0..20";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "-1..20";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "min..20";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "max..20";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "min..max";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+    }
+
+    #[test]
+    fn test_int_parse_value() {
+        let literal = "-128";
+        let result = int_parse_value(literal, "min");
+        println!("XXX test_int_parse_value: {:?}", result);
+
+        let literal = "max";
+        let result = int_parse_value(literal, "max");
+        println!("XXX test_int_parse_value: {:?}", result);
     }
 
     // let literal = "0..1";
