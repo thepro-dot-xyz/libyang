@@ -6,7 +6,7 @@ use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::{char, digit0, multispace0, multispace1, one_of};
 use nom::combinator::recognize;
 use nom::multi::many0;
-use nom::sequence::pair;
+use nom::sequence::{pair, tuple};
 use nom::IResult;
 
 // 4.2.4.  Built-In Types
@@ -396,12 +396,20 @@ fn digit1to9(input: &str) -> IResult<&str, char> {
     one_of("123456789")(input)
 }
 
-fn uint(input: &str) -> IResult<&str, &str> {
+fn uint_parse(input: &str) -> IResult<&str, &str> {
     alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
 }
 
+pub fn negative_parse(input: &str) -> IResult<&str, &str> {
+    recognize(tuple((tag("-"), digit1to9, digit0)))(input)
+}
+
+pub fn int_parse(input: &str) -> IResult<&str, &str> {
+    alt((negative_parse, uint_parse))(input)
+}
+
 pub fn range_str_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = uint(s)?;
+    let (s, _) = uint_parse(s)?;
     Ok((s, Node::EmptyNode))
 }
 
@@ -428,6 +436,8 @@ pub fn types_parse(s: &str) -> IResult<&str, Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nom::error::ErrorKind;
+    use nom::Err::Error;
 
     #[test]
     fn yang_type() {
@@ -491,7 +501,7 @@ mod tests {
     //     }
     // }
     #[test]
-    fn test_range() {
+    fn test_uint_parse() {
         struct Test {
             input: &'static str,
             output: IResult<&'static str, &'static str>,
@@ -517,9 +527,97 @@ mod tests {
                 input: "2020",
                 output: Ok(("", "2020")),
             },
+            Test {
+                input: "-2020",
+                output: Err(Error(("-2020", ErrorKind::OneOf))),
+            },
         ];
         for t in &tests {
-            let result = uint(t.input);
+            let result = uint_parse(t.input);
+            assert_eq!(result, t.output);
+        }
+    }
+
+    #[test]
+    fn test_negative_parse() {
+        struct Test {
+            input: &'static str,
+            output: IResult<&'static str, &'static str>,
+        };
+        let tests = [
+            Test {
+                input: "0",
+                output: Err(Error(("0", ErrorKind::Tag))),
+            },
+            Test {
+                input: "-0",
+                output: Err(Error(("0", ErrorKind::OneOf))),
+            },
+            Test {
+                input: "-1",
+                output: Ok(("", "-1")),
+            },
+            Test {
+                input: "-123",
+                output: Ok(("", "-123")),
+            },
+            Test {
+                input: "-1020",
+                output: Ok(("", "-1020")),
+            },
+            Test {
+                input: "2020",
+                output: Err(Error(("2020", ErrorKind::Tag))),
+            },
+        ];
+        for t in &tests {
+            let result = negative_parse(t.input);
+            assert_eq!(result, t.output);
+        }
+    }
+
+    #[test]
+    fn test_int_parse() {
+        struct Test {
+            input: &'static str,
+            output: IResult<&'static str, &'static str>,
+        };
+        let tests = [
+            Test {
+                input: "0",
+                output: Ok(("", "0")),
+            },
+            Test {
+                input: "-0",
+                output: Err(Error(("-0", ErrorKind::OneOf))),
+            },
+            Test {
+                input: "1",
+                output: Ok(("", "1")),
+            },
+            Test {
+                input: "-1",
+                output: Ok(("", "-1")),
+            },
+            Test {
+                input: "123",
+                output: Ok(("", "123")),
+            },
+            Test {
+                input: "-123",
+                output: Ok(("", "-123")),
+            },
+            Test {
+                input: "-1020",
+                output: Ok(("", "-1020")),
+            },
+            Test {
+                input: "2020",
+                output: Ok(("", "2020")),
+            },
+        ];
+        for t in &tests {
+            let result = int_parse(t.input);
             assert_eq!(result, t.output);
         }
     }
