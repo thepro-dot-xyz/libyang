@@ -3,8 +3,10 @@ use crate::parser::*;
 use crate::Node;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
-use nom::character::complete::{char, multispace0, multispace1};
+use nom::character::complete::{char, digit0, multispace0, multispace1, one_of};
+use nom::combinator::recognize;
 use nom::multi::many0;
+use nom::sequence::pair;
 use nom::IResult;
 
 // 4.2.4.  Built-In Types
@@ -385,7 +387,24 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Typedef(Box::new(node))))
 }
 
-// Parse type statements.
+// We owe integer parsing logic from https://codeandbitters.com/lets-build-a-parser/.
+//
+// When type is unsinged integer value is parsed into u64 otherwise parsed into
+// i64.
+
+fn digit1to9(input: &str) -> IResult<&str, char> {
+    one_of("123456789")(input)
+}
+
+fn uint(input: &str) -> IResult<&str, &str> {
+    alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
+}
+
+pub fn range_str_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = uint(s)?;
+    Ok((s, Node::EmptyNode))
+}
+
 pub fn types_parse(s: &str) -> IResult<&str, Node> {
     alt((
         type_int8_parse,
@@ -441,4 +460,72 @@ mod tests {
         let result = type_identityref_parse(literal);
         println!("XXX test_identityref_parse: {:?}", result);
     }
+
+    // "range" has digit, "min", "max" as <value> statement. Range can be
+    // specified <value>..<value> or just simple <value>. We can have
+    // multiple range with separating pipe
+    // <value>..<value>|<value>..<value>. So "range" can have multiple set
+    // of range. When type is inherited, range must be more specific than
+    // parent type range. Following example from RFC7951 shows illegal range
+    // specification when it inherit range from parent.
+
+    // 9.2.5.  Usage Example
+    //
+    // typedef my-base-int32-type {
+    //     type int32 {
+    //         range "1..4 | 10..20";
+    //     }
+    // }
+    //
+    // typedef my-type1 {
+    //     type my-base-int32-type {
+    //         // legal range restriction
+    //         range "11..max"; // 11..20
+    //     }
+    // }
+    //
+    // typedef my-type2 {
+    //     type my-base-int32-type {
+    //         // illegal range restriction
+    //         range "11..100";
+    //     }
+    // }
+    #[test]
+    fn test_range() {
+        struct Test {
+            input: &'static str,
+            output: IResult<&'static str, &'static str>,
+        };
+        let tests = [
+            Test {
+                input: "0",
+                output: Ok(("", "0")),
+            },
+            Test {
+                input: "00",
+                output: Ok(("0", "0")),
+            },
+            Test {
+                input: "0123",
+                output: Ok(("123", "0")),
+            },
+            Test {
+                input: "123",
+                output: Ok(("", "123")),
+            },
+            Test {
+                input: "2020",
+                output: Ok(("", "2020")),
+            },
+        ];
+        for t in &tests {
+            let result = uint(t.input);
+            assert_eq!(result, t.output);
+        }
+    }
+
+    // let literal = "0..1";
+    // range "0 | 30..65535";
+    // range "1..14 | 36 | 40 | 44| 48 | 52 | 56 | 60 | 64 | 100 | 104 | 108 | 112 | 116 | 120 | 124 | 128 | 132 | 136 | 140 | 144 | 149 | 153 | 157 | 161 | 165";
+    // range "68..max";
 }

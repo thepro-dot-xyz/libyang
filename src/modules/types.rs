@@ -72,6 +72,15 @@ pub struct EnumNode {
     pub nodes: (Vec<Node>,),
 }
 
+#[derive(Debug, PartialEq)]
+pub struct Range {}
+
+#[derive(Debug, PartialEq)]
+pub struct RangeNode {
+    pub name: String,
+    pub nodes: (Vec<Range>,),
+}
+
 #[derive(Debug, Default, PartialEq)]
 pub struct EnumerationNode {
     pub name: String,
