@@ -400,20 +400,6 @@ fn uint_parse(input: &str) -> IResult<&str, &str> {
     alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
 }
 
-#[derive(Debug)]
-pub enum IntVal {
-    Min,
-    Max,
-    Val(i64),
-}
-
-#[derive(Debug)]
-pub enum UintVal {
-    Min,
-    Max,
-    Val(u64),
-}
-
 fn negative_parse(input: &str) -> IResult<&str, &str> {
     recognize(tuple((tag("-"), digit1to9, digit0)))(input)
 }

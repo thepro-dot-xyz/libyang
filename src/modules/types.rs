@@ -73,12 +73,56 @@ pub struct EnumNode {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Range {}
+pub enum IntVal {
+    Min,
+    Max,
+    Val(i64),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum UintVal {
+    Min,
+    Max,
+    Val(u64),
+}
+
+#[derive(Debug)]
+pub enum RangeVal<T> {
+    Min,
+    Max,
+    Val(T),
+}
+
+pub trait Apply {
+    fn apply(self, input: &'static str) -> bool;
+}
+
+impl<T> Apply for RangeVal<T> {
+    fn apply(self, _input: &'static str) -> bool {
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_range_val() {
+        let val = RangeVal::<u64>::Val(10);
+        println!("turbo fish {:?}", val);
+    }
+}
+
+pub struct Range {
+    pub start: Box<dyn Apply>,
+    pub end: Box<dyn Apply>,
+}
 
 #[derive(Debug, PartialEq)]
 pub struct RangeNode {
     pub name: String,
-    pub nodes: (Vec<Range>,),
+    // pub nodes: (Vec<Range>,),
 }
 
 #[derive(Debug, Default, PartialEq)]
