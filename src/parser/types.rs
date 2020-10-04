@@ -396,7 +396,7 @@ fn digit1to9(input: &str) -> IResult<&str, char> {
     one_of("123456789")(input)
 }
 
-fn uint_parse(input: &str) -> IResult<&str, &str> {
+pub fn uint_parse(input: &str) -> IResult<&str, &str> {
     alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
 }
 
@@ -475,42 +475,6 @@ pub fn uint_value_parse(s: &str) -> IResult<&str, RangeVal<u64>> {
         }
     }
 }
-
-pub fn range_uint_parse(s: &str) -> IResult<&str, RangeUint> {
-    let (s, _) = multispace0(s)?;
-    let (s, r1) = alt((tag("min"), uint_parse))(s)?;
-    let (_, start) = uint_value_parse(r1)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag("..")(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, r2) = alt((tag("max"), uint_parse))(s)?;
-    let (_, end) = uint_value_parse(r2)?;
-    let range = RangeUint {
-        start: start,
-        end: end,
-    };
-    Ok((s, range))
-}
-
-pub fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
-    let (s, _) = multispace0(s)?;
-    let (s, r) = alt((tag("min"), tag("max"), uint_parse))(s)?;
-    let (_, val) = uint_value_parse(r)?;
-    let (s, _) = multispace0(s)?;
-    let range = RangeUint {
-        start: val,
-        end: RangeVal::None,
-    };
-    Ok((s, range))
-}
-
-// pub fn range_uint_multi_parse(s: &str) -> IResult<&str, Vec<RangeUint>> {
-//     let (s, v) = separated_nonempty_list(
-//         permutation((multispace0, char('|'), multispace0)),
-//         alt((range_uint_parse, range_uint_single_parse)),
-//     )(s)?;
-//     Ok((s, v))
-// }
 
 pub fn types_parse(s: &str) -> IResult<&str, Node> {
     alt((
@@ -746,36 +710,6 @@ mod tests {
         let literal = "min..max";
         let result = range_uint_parse(literal);
         println!("{:?}", result);
-    }
-
-    // #[test]
-    // fn test_rainge_uint_multi_parse() {
-    //     let literal = "0..1";
-    //     let result = range_uint_multi_parse(literal);
-    //     println!("XXX range_uint_multi: {:?}", result);
-
-    //     let literal = "1..20 | 22..24";
-    //     let result = range_uint_multi_parse(literal);
-    //     println!("XXX range_uint_multi: {:?}", result);
-
-    //     let literal = "1..20 | 22..24 | 35..100";
-    //     let result = range_uint_multi_parse(literal);
-    //     println!("XXX range_uint_multi: {:?}", result);
-
-    //     let literal = "0 | 1..10";
-    //     let result = range_uint_multi_parse(literal);
-    //     println!("XXX range_uint_multi: {:?}", result);
-    // }
-
-    #[test]
-    fn test_uint_single_parse() {
-        let literal = "128";
-        let result = range_uint_single_parse(literal);
-        println!("XXX range_uint_single_parse: {:?}", result);
-
-        let literal = "max";
-        let result = range_uint_single_parse(literal);
-        println!("XXX range_uint_single_parse: {:?}", result);
     }
 
     #[test]
