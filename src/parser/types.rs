@@ -400,6 +400,20 @@ fn uint_parse(input: &str) -> IResult<&str, &str> {
     alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
 }
 
+#[derive(Debug)]
+pub enum IntVal {
+    Min,
+    Max,
+    Val(i64),
+}
+
+#[derive(Debug)]
+pub enum UintVal {
+    Min,
+    Max,
+    Val(u64),
+}
+
 fn negative_parse(input: &str) -> IResult<&str, &str> {
     recognize(tuple((tag("-"), digit1to9, digit0)))(input)
 }
@@ -439,13 +453,6 @@ pub fn range_int_single_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-pub fn range_uint_single_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, _) = alt((tag("min"), tag("max"), uint_parse))(s)?;
-    let (s, _) = multispace0(s)?;
-    Ok((s, Node::EmptyNode))
-}
-
 pub fn range_int_parse(s: &'static str) -> IResult<&'static str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, v1) = int_parse_value(s, "min")?;
@@ -458,19 +465,46 @@ pub fn range_int_parse(s: &'static str) -> IResult<&'static str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-pub fn range_uint_parse(s: &str) -> IResult<&str, Node> {
+pub fn uint_value_parse(s: &str) -> IResult<&str, RangeVal<u64>> {
+    match s {
+        "max" => Ok((s, RangeVal::<u64>::Max)),
+        "min" => Ok((s, RangeVal::<u64>::Min)),
+        v => {
+            let n = v.parse::<u64>().unwrap();
+            Ok((s, RangeVal::<u64>::Val(n)))
+        }
+    }
+}
+
+fn range_uint_parse(s: &str) -> IResult<&str, RangeUint> {
     let (s, _) = multispace0(s)?;
-    let (s, v1) = alt((tag("min"), uint_parse))(s)?;
+    let (s, r1) = alt((tag("min"), uint_parse))(s)?;
+    let (_, start) = uint_value_parse(r1)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("..")(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, v2) = alt((tag("max"), uint_parse))(s)?;
-    println!("v1 {}", v1);
-    println!("v2 {}", v2);
-    Ok((s, Node::EmptyNode))
+    let (s, r2) = alt((tag("max"), uint_parse))(s)?;
+    let (_, end) = uint_value_parse(r2)?;
+    let range = RangeUint {
+        start: start,
+        end: end,
+    };
+    Ok((s, range))
 }
 
-pub fn range_uint_multi_parse(s: &str) -> IResult<&str, Vec<Node>> {
+fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
+    let (s, _) = multispace0(s)?;
+    let (s, r) = alt((tag("min"), tag("max"), uint_parse))(s)?;
+    let (_, val) = uint_value_parse(r)?;
+    let (s, _) = multispace0(s)?;
+    let range = RangeUint {
+        start: val,
+        end: RangeVal::None,
+    };
+    Ok((s, range))
+}
+
+pub fn range_uint_multi_parse(s: &str) -> IResult<&str, Vec<RangeUint>> {
     let (s, v) = separated_nonempty_list(
         permutation((multispace0, char('|'), multispace0)),
         alt((range_uint_parse, range_uint_single_parse)),

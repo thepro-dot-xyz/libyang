@@ -86,11 +86,12 @@ pub enum UintVal {
     Val(u64),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RangeVal<T> {
     Min,
     Max,
     Val(T),
+    None,
 }
 
 pub trait Apply {
@@ -114,15 +115,28 @@ mod tests {
     }
 }
 
-pub struct Range {
-    pub start: Box<dyn Apply>,
-    pub end: Box<dyn Apply>,
+#[derive(Debug, PartialEq)]
+pub struct RangeInt {
+    pub start: RangeVal<i64>,
+    pub end: RangeVal<i64>,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct RangeNode {
+pub struct RangeUint {
+    pub start: RangeVal<u64>,
+    pub end: RangeVal<u64>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct RangeIntNode {
     pub name: String,
-    // pub nodes: (Vec<Range>,),
+    pub nodes: (Vec<RangeInt>,),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct RangeUintNode {
+    pub name: String,
+    pub nodes: (Vec<RangeUint>,),
 }
 
 #[derive(Debug, Default, PartialEq)]
