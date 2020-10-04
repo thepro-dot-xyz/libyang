@@ -731,7 +731,7 @@ mod tests {
         let result = range_uint_parse(literal);
         println!("{:?}", result);
 
-        let literal = "-1..20";
+        let literal = "-1.. 20";
         let result = range_uint_parse(literal);
         println!("{:?}", result);
 
