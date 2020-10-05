@@ -53,47 +53,58 @@ mod tests {
 
     #[test]
     fn test_range_uint_single_parse() {
-        let literal = "128";
-        let result = range_uint_single_parse(literal);
-        let expect = RangeUint {
-            start: RangeVal::Val(128u64),
-            end: RangeVal::None,
+        struct Test {
+            input: &'static str,
+            output: IResult<&'static str, RangeUint>,
         };
-        assert_eq!(result, Ok(("", expect)));
-
-        let literal = "max";
-        let result = range_uint_single_parse(literal);
-        let expect = RangeUint {
-            start: RangeVal::Max,
-            end: RangeVal::None,
-        };
-        assert_eq!(result, Ok(("", expect)));
-
-        let literal = "0";
-        let result = range_uint_single_parse(literal);
-        let expect = RangeUint {
-            start: RangeVal::Val(0u64),
-            end: RangeVal::None,
-        };
-        assert_eq!(result, Ok(("", expect)));
-
-        // "-0" should fail.
-        let literal = "-0";
-        let result = range_uint_single_parse(literal);
-        let expect = Error(("-0", ErrorKind::OneOf));
-        assert_eq!(result, Err(expect));
-
-        // "-100" should fail.
-        let literal = "-100";
-        let result = range_uint_single_parse(literal);
-        let expect = Error(("-100", ErrorKind::OneOf));
-        assert_eq!(result, Err(expect));
-
-        // "abc" should fail.
-        let literal = "abc";
-        let result = range_uint_single_parse(literal);
-        let expect = Error(("abc", ErrorKind::OneOf));
-        assert_eq!(result, Err(expect));
+        let tests = [
+            Test {
+                input: "128",
+                output: Ok((
+                    "",
+                    RangeUint {
+                        start: RangeVal::Val(128u64),
+                        end: RangeVal::None,
+                    },
+                )),
+            },
+            Test {
+                input: "max",
+                output: Ok((
+                    "",
+                    RangeUint {
+                        start: RangeVal::Max,
+                        end: RangeVal::None,
+                    },
+                )),
+            },
+            Test {
+                input: "0",
+                output: Ok((
+                    "",
+                    RangeUint {
+                        start: RangeVal::Val(0u64),
+                        end: RangeVal::None,
+                    },
+                )),
+            },
+            Test {
+                input: "-0",
+                output: Err(Error(("-0", ErrorKind::OneOf))),
+            },
+            Test {
+                input: "-100",
+                output: Err(Error(("-100", ErrorKind::OneOf))),
+            },
+            Test {
+                input: "abc",
+                output: Err(Error(("abc", ErrorKind::OneOf))),
+            },
+        ];
+        for t in &tests {
+            let result = range_uint_single_parse(t.input);
+            assert_eq!(result, t.output);
+        }
     }
 
     #[test]
