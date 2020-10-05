@@ -48,6 +48,8 @@ pub fn range_uint_parse(s: &str) -> IResult<&str, Vec<RangeUint>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nom::error::ErrorKind;
+    use nom::Err::Error;
 
     #[test]
     fn test_range_uint_single_parse() {
@@ -78,17 +80,20 @@ mod tests {
         // "-0" should fail.
         let literal = "-0";
         let result = range_uint_single_parse(literal);
-        println!("{:?}", result);
+        let expect = Error(("-0", ErrorKind::OneOf));
+        assert_eq!(result, Err(expect));
 
         // "-100" should fail.
         let literal = "-100";
         let result = range_uint_single_parse(literal);
-        println!("{:?}", result);
+        let expect = Error(("-100", ErrorKind::OneOf));
+        assert_eq!(result, Err(expect));
 
         // "abc" should fail.
         let literal = "abc";
         let result = range_uint_single_parse(literal);
-        println!("{:?}", result);
+        let expect = Error(("abc", ErrorKind::OneOf));
+        assert_eq!(result, Err(expect));
     }
 
     #[test]
