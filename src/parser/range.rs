@@ -6,6 +6,17 @@ use nom::character::complete::{char, multispace0};
 use nom::multi::separated_nonempty_list;
 use nom::IResult;
 
+fn uint_value_parse(s: &str) -> IResult<&str, RangeVal<u64>> {
+    match s {
+        "max" => Ok((s, RangeVal::<u64>::Max)),
+        "min" => Ok((s, RangeVal::<u64>::Min)),
+        v => {
+            let n = v.parse::<u64>().unwrap();
+            Ok((s, RangeVal::<u64>::Val(n)))
+        }
+    }
+}
+
 // Parse pair of value for range such as "min..100".
 fn range_uint_pair_parse(s: &str) -> IResult<&str, RangeUint> {
     let (s, _) = multispace0(s)?;
@@ -111,15 +122,41 @@ mod tests {
     fn test_range_uint_pair_parse() {
         let literal = "0..1";
         let result = range_uint_parse(literal);
+        let expect = RangeUint {
+            start: RangeVal::Val(0u64),
+            end: RangeVal::Val(1u64),
+        };
+        assert_eq!(result, Ok(("", vec![expect])));
+
+        let literal = "1..100";
+        let result = range_uint_parse(literal);
+        let expect = RangeUint {
+            start: RangeVal::Val(1u64),
+            end: RangeVal::Val(100u64),
+        };
+        assert_eq!(result, Ok(("", vec![expect])));
+
+        // We interpret start > end as valid statement. Although it won't match
+        // to any value.
+        let literal = "100..1";
+        let result = range_uint_parse(literal);
+        println!("XXX range_uint_multi: {:?}", result);
+
+        let literal = "-0..1";
+        let result = range_uint_parse(literal);
+        println!("XXX range_uint_multi: {:?}", result);
+
+        let literal = "-1..1";
+        let result = range_uint_parse(literal);
+        println!("XXX range_uint_multi: {:?}", result);
+
+        let literal = "-100..-1";
+        let result = range_uint_parse(literal);
         println!("XXX range_uint_multi: {:?}", result);
     }
 
     #[test]
     fn test_range_uint_multi_parse() {
-        let literal = "0..1";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-
         let literal = "1..20 | 22..24";
         let result = range_uint_parse(literal);
         println!("XXX range_uint_multi: {:?}", result);

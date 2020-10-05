@@ -465,17 +465,6 @@ pub fn range_int_parse(s: &'static str) -> IResult<&'static str, Node> {
     Ok((s, Node::EmptyNode))
 }
 
-pub fn uint_value_parse(s: &str) -> IResult<&str, RangeVal<u64>> {
-    match s {
-        "max" => Ok((s, RangeVal::<u64>::Max)),
-        "min" => Ok((s, RangeVal::<u64>::Min)),
-        v => {
-            let n = v.parse::<u64>().unwrap();
-            Ok((s, RangeVal::<u64>::Val(n)))
-        }
-    }
-}
-
 pub fn types_parse(s: &str) -> IResult<&str, Node> {
     alt((
         type_int8_parse,
