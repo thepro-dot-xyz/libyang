@@ -228,11 +228,16 @@ fn type_uint_parse(s: &str, type_string: String, type_kind: TypeKind) -> IResult
     let (s, _) = multispace1(s)?;
     let (s, _) = tag(type_string.as_str())(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, nodes) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
-    for node in nodes {
-        println!("XXX range: {:?}", node);
+    let (s, mut subs) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+    let mut node = TypeNode::new(type_kind);
+    while let Some(sub) = subs.pop() {
+        match sub {
+            Node::RangeUint(n) => {
+                node.range_uint = Some(*n);
+            }
+            _ => {}
+        }
     }
-    let node = TypeNode::new(type_kind);
     Ok((s, Node::Type(Box::new(node))))
 }
 
@@ -437,6 +442,41 @@ pub fn types_parse(s: &str) -> IResult<&str, Node> {
         type_path_identifier_parse,
         type_identityref_parse,
     ))(s)
+}
+
+// WIP for range match function.
+fn match_uint_range_node(n: u64, range: &Vec<RangeUint>) -> bool {
+    for r in range {
+        if r.end == RangeVal::<u64>::None {
+            let start = match r.start {
+                RangeVal::<u64>::Val(v) => v,
+                RangeVal::<u64>::Min => 0,
+                RangeVal::<u64>::Max => 0,
+                _ => 0,
+            };
+            if n == start {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+// WIP for match function.
+pub fn match_node(s: &str, node: &TypeNode) -> bool {
+    if node.kind != TypeKind::Yuint8 {
+        return false;
+    }
+    if let Ok(v) = s.parse::<u64>() {
+        if let Some(range) = &node.range_uint {
+            return match_uint_range_node(v, &range);
+        } else {
+            // TODO Type value range check.
+            return true;
+        }
+    } else {
+        return false;
+    }
 }
 
 #[cfg(test)]
