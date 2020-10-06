@@ -422,18 +422,6 @@ fn int_parse(input: &str) -> IResult<&str, &str> {
     alt((negative_parse, uint_parse))(input)
 }
 
-pub fn uint_parse_value(input: &'static str, mmax: &'static str) -> IResult<&'static str, UintVal> {
-    let parser = alt((tag(mmax), uint_parse));
-    map(parser, |s| match s {
-        "max" => UintVal::Max,
-        "min" => UintVal::Min,
-        x => {
-            let n = x.parse::<u64>().unwrap();
-            UintVal::Val(n)
-        }
-    })(input)
-}
-
 pub fn int_parse_value(input: &'static str, mmax: &'static str) -> IResult<&'static str, IntVal> {
     let parser = alt((tag(mmax), int_parse));
     map(parser, |s| match s {
@@ -710,6 +698,13 @@ mod tests {
         let literal = "max";
         let result = int_parse_value(literal, "max");
         println!("XXX test_int_parse_value: {:?}", result);
+    }
+
+    #[test]
+    fn test_negative_parse2() {
+        let literal = "--0";
+        let result = negative_parse(literal);
+        println!("{:?}", result);
     }
 
     // let literal = "0..1";
