@@ -45,7 +45,6 @@ fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
     Ok((s, range))
 }
 
-// Parse pair of value for range such as "min..100".
 fn range_int_pair_parse(s: &str) -> IResult<&str, RangeInt> {
     let (s, _) = multispace0(s)?;
     let (s, r1) = alt((tag("min"), int_parse))(s)?;
@@ -78,7 +77,6 @@ fn range_uint_pair_parse(s: &str) -> IResult<&str, RangeUint> {
     Ok((s, range))
 }
 
-// Combine single and pair parser for range with '|'. "0 | 2..10 | max"
 pub fn range_int_parse(s: &str) -> IResult<&str, Vec<RangeInt>> {
     let (s, v) = separated_nonempty_list(
         permutation((multispace0, char('|'), multispace0)),
