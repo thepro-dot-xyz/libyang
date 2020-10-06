@@ -84,11 +84,11 @@ where
     Ok((s, range))
 }
 
-fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
+fn range_int_single_parse(s: &str) -> IResult<&str, Range<i64>> {
     range_single_parse::<i64>(s, int_parse)
 }
 
-fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
+fn range_uint_single_parse(s: &str) -> IResult<&str, Range<u64>> {
     range_single_parse::<u64>(s, uint_parse)
 }
 
@@ -100,20 +100,18 @@ fn range_uint_pair_parse(s: &str) -> IResult<&str, Range<u64>> {
     range_pair_parse::<u64>(s, uint_parse)
 }
 
-pub fn range_int_parse(s: &str) -> IResult<&str, Vec<RangeInt>> {
-    let (s, v) = separated_nonempty_list(
+pub fn range_int_parse(s: &str) -> IResult<&str, Vec<Range<i64>>> {
+    separated_nonempty_list(
         permutation((multispace0, char('|'), multispace0)),
         alt((range_int_pair_parse, range_int_single_parse)),
-    )(s)?;
-    Ok((s, v))
+    )(s)
 }
 
-pub fn range_uint_parse(s: &str) -> IResult<&str, Vec<RangeUint>> {
-    let (s, v) = separated_nonempty_list(
+pub fn range_uint_parse(s: &str) -> IResult<&str, Vec<Range<u64>>> {
+    separated_nonempty_list(
         permutation((multispace0, char('|'), multispace0)),
         alt((range_uint_pair_parse, range_uint_single_parse)),
-    )(s)?;
-    Ok((s, v))
+    )(s)
 }
 
 #[cfg(test)]
