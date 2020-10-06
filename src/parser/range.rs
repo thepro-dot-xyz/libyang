@@ -391,16 +391,16 @@ mod tests {
         let literal = "1 .. 20";
         let result = range_uint_parse(literal);
         let expect = vec![RangeUint {
-            start: RangeVal::<u64>::Val(1),
-            end: RangeVal::<u64>::Val(20),
+            start: RangeVal::Val(1u64),
+            end: RangeVal::Val(20u64),
         }];
         assert_eq!(result, Ok(("", expect)));
 
         let literal = "0..20";
         let result = range_uint_parse(literal);
         let expect = vec![RangeUint {
-            start: RangeVal::<u64>::Val(0),
-            end: RangeVal::<u64>::Val(20),
+            start: RangeVal::Val(0u64),
+            end: RangeVal::Val(20u64),
         }];
         assert_eq!(result, Ok(("", expect)));
 
