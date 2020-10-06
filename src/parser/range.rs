@@ -69,36 +69,35 @@ pub fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
     range_single_parse::<u64>(s, uint_parse)
 }
 
-fn range_int_pair_parse(s: &str) -> IResult<&str, RangeInt> {
+pub fn range_pair_parse<T>(
+    s: &str,
+    digit_parse: fn(&str) -> IResult<&str, &str>,
+) -> IResult<&str, Range<T>>
+where
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
     let (s, _) = multispace0(s)?;
-    let (s, r1) = alt((tag("min"), int_parse))(s)?;
-    let (_, start) = range_value_parse::<i64>(r1)?;
+    let (s, r1) = alt((tag("min"), digit_parse))(s)?;
+    let (_, start) = range_value_parse::<T>(r1)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("..")(s)?;
     let (s, _) = multispace0(s)?;
-    let (s, r2) = alt((tag("max"), int_parse))(s)?;
-    let (_, end) = range_value_parse::<i64>(r2)?;
-    let range = RangeInt {
+    let (s, r2) = alt((tag("max"), digit_parse))(s)?;
+    let (_, end) = range_value_parse::<T>(r2)?;
+    let range = Range::<T> {
         start: start,
         end: end,
     };
     Ok((s, range))
 }
 
-fn range_uint_pair_parse(s: &str) -> IResult<&str, RangeUint> {
-    let (s, _) = multispace0(s)?;
-    let (s, r1) = alt((tag("min"), uint_parse))(s)?;
-    let (_, start) = range_value_parse::<u64>(r1)?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag("..")(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, r2) = alt((tag("max"), uint_parse))(s)?;
-    let (_, end) = range_value_parse::<u64>(r2)?;
-    let range = RangeUint {
-        start: start,
-        end: end,
-    };
-    Ok((s, range))
+fn range_int_pair_parse(s: &str) -> IResult<&str, Range<i64>> {
+    range_pair_parse::<i64>(s, int_parse)
+}
+
+fn range_uint_pair_parse(s: &str) -> IResult<&str, Range<u64>> {
+    range_pair_parse::<u64>(s, uint_parse)
 }
 
 pub fn range_int_parse(s: &str) -> IResult<&str, Vec<RangeInt>> {
