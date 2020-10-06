@@ -116,6 +116,12 @@ mod tests {
 }
 
 #[derive(Debug, PartialEq)]
+pub struct Range<T> {
+    pub start: RangeVal<T>,
+    pub end: RangeVal<T>,
+}
+
+#[derive(Debug, PartialEq)]
 pub struct RangeInt {
     pub start: RangeVal<i64>,
     pub end: RangeVal<i64>,

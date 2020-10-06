@@ -4,9 +4,9 @@ use crate::Node;
 use nom::branch::alt;
 use nom::bytes::complete::{tag, take_while1};
 use nom::character::complete::{char, digit0, multispace0, multispace1, one_of};
-use nom::combinator::{map, recognize};
+use nom::combinator::{opt, recognize};
 use nom::multi::many0;
-use nom::sequence::{pair, tuple};
+use nom::sequence::pair;
 use nom::IResult;
 
 // 4.2.4.  Built-In Types
@@ -387,10 +387,8 @@ pub fn typedef_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::Typedef(Box::new(node))))
 }
 
-// We owe integer parsing logic from https://codeandbitters.com/lets-build-a-parser/.
-//
-// When type is unsinged integer value is parsed into u64 otherwise parsed into
-// i64.
+// We owe integer parsing logic from
+// https://codeandbitters.com/lets-build-a-parser/.
 
 fn digit1to9(input: &str) -> IResult<&str, char> {
     one_of("123456789")(input)
@@ -398,6 +396,10 @@ fn digit1to9(input: &str) -> IResult<&str, char> {
 
 pub fn uint_parse(input: &str) -> IResult<&str, &str> {
     alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
+}
+
+pub fn int_parse(input: &str) -> IResult<&str, &str> {
+    recognize(pair(opt(tag("-")), uint_parse))(input)
 }
 
 #[derive(Debug)]
@@ -412,45 +414,6 @@ pub enum UintVal {
     Min,
     Max,
     Val(u64),
-}
-
-fn negative_parse(input: &str) -> IResult<&str, &str> {
-    recognize(tuple((tag("-"), digit1to9, digit0)))(input)
-}
-
-fn int_parse(input: &str) -> IResult<&str, &str> {
-    alt((negative_parse, uint_parse))(input)
-}
-
-pub fn int_parse_value(input: &'static str, mmax: &'static str) -> IResult<&'static str, IntVal> {
-    let parser = alt((tag(mmax), int_parse));
-    map(parser, |s| match s {
-        "max" => IntVal::Max,
-        "min" => IntVal::Min,
-        x => {
-            let n = x.parse::<i64>().unwrap();
-            IntVal::Val(n)
-        }
-    })(input)
-}
-
-pub fn range_int_single_parse(s: &str) -> IResult<&str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, _) = alt((tag("min"), tag("max"), int_parse))(s)?;
-    let (s, _) = multispace0(s)?;
-    Ok((s, Node::EmptyNode))
-}
-
-pub fn range_int_parse(s: &'static str) -> IResult<&'static str, Node> {
-    let (s, _) = multispace0(s)?;
-    let (s, v1) = int_parse_value(s, "min")?;
-    let (s, _) = multispace0(s)?;
-    let (s, _) = tag("..")(s)?;
-    let (s, _) = multispace0(s)?;
-    let (s, v2) = int_parse_value(s, "max")?;
-    println!("v1 {:?}", v1);
-    println!("v2 {:?}", v2);
-    Ok((s, Node::EmptyNode))
 }
 
 pub fn types_parse(s: &str) -> IResult<&str, Node> {
@@ -579,44 +542,6 @@ mod tests {
     }
 
     #[test]
-    fn test_negative_parse() {
-        struct Test {
-            input: &'static str,
-            output: IResult<&'static str, &'static str>,
-        };
-        let tests = [
-            Test {
-                input: "0",
-                output: Err(Error(("0", ErrorKind::Tag))),
-            },
-            Test {
-                input: "-0",
-                output: Err(Error(("0", ErrorKind::OneOf))),
-            },
-            Test {
-                input: "-1",
-                output: Ok(("", "-1")),
-            },
-            Test {
-                input: "-123",
-                output: Ok(("", "-123")),
-            },
-            Test {
-                input: "-1020",
-                output: Ok(("", "-1020")),
-            },
-            Test {
-                input: "2020",
-                output: Err(Error(("2020", ErrorKind::Tag))),
-            },
-        ];
-        for t in &tests {
-            let result = negative_parse(t.input);
-            assert_eq!(result, t.output);
-        }
-    }
-
-    #[test]
     fn test_int_parse() {
         struct Test {
             input: &'static str,
@@ -629,7 +554,7 @@ mod tests {
             },
             Test {
                 input: "-0",
-                output: Err(Error(("-0", ErrorKind::OneOf))),
+                output: Ok(("", "-0")),
             },
             Test {
                 input: "1",
@@ -686,24 +611,6 @@ mod tests {
 
         let literal = "min..max";
         let result = range_uint_parse(literal);
-        println!("{:?}", result);
-    }
-
-    #[test]
-    fn test_int_parse_value() {
-        let literal = "-128";
-        let result = int_parse_value(literal, "min");
-        println!("XXX test_int_parse_value: {:?}", result);
-
-        let literal = "max";
-        let result = int_parse_value(literal, "max");
-        println!("XXX test_int_parse_value: {:?}", result);
-    }
-
-    #[test]
-    fn test_negative_parse2() {
-        let literal = "--0";
-        let result = negative_parse(literal);
         println!("{:?}", result);
     }
 

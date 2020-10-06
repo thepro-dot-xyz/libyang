@@ -28,18 +28,17 @@ fn uint_value_parse(s: &str) -> IResult<&str, RangeVal<u64>> {
     }
 }
 
-// Parse single range parameter such as "min", "100".
-// fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
-//     let (s, _) = multispace0(s)?;
-//     let (s, r) = alt((tag("min"), tag("max"), uint_parse))(s)?;
-//     let (_, val) = uint_value_parse(r)?;
-//     let (s, _) = multispace0(s)?;
-//     let range = RangeUint {
-//         start: val,
-//         end: RangeVal::None,
-//     };
-//     Ok((s, range))
-// }
+fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
+    let (s, _) = multispace0(s)?;
+    let (s, r) = alt((tag("min"), tag("max"), int_parse))(s)?;
+    let (_, val) = int_value_parse(r)?;
+    let (s, _) = multispace0(s)?;
+    let range = RangeInt {
+        start: val,
+        end: RangeVal::None,
+    };
+    Ok((s, range))
+}
 
 fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
     let (s, _) = multispace0(s)?;
@@ -54,6 +53,22 @@ fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
 }
 
 // Parse pair of value for range such as "min..100".
+fn range_int_pair_parse(s: &str) -> IResult<&str, RangeInt> {
+    let (s, _) = multispace0(s)?;
+    let (s, r1) = alt((tag("min"), int_parse))(s)?;
+    let (_, start) = int_value_parse(r1)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("..")(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, r2) = alt((tag("max"), int_parse))(s)?;
+    let (_, end) = int_value_parse(r2)?;
+    let range = RangeInt {
+        start: start,
+        end: end,
+    };
+    Ok((s, range))
+}
+
 fn range_uint_pair_parse(s: &str) -> IResult<&str, RangeUint> {
     let (s, _) = multispace0(s)?;
     let (s, r1) = alt((tag("min"), uint_parse))(s)?;
@@ -71,6 +86,14 @@ fn range_uint_pair_parse(s: &str) -> IResult<&str, RangeUint> {
 }
 
 // Combine single and pair parser for range with '|'. "0 | 2..10 | max"
+pub fn range_int_parse(s: &str) -> IResult<&str, Vec<RangeInt>> {
+    let (s, v) = separated_nonempty_list(
+        permutation((multispace0, char('|'), multispace0)),
+        alt((range_int_pair_parse, range_int_single_parse)),
+    )(s)?;
+    Ok((s, v))
+}
+
 pub fn range_uint_parse(s: &str) -> IResult<&str, Vec<RangeUint>> {
     let (s, v) = separated_nonempty_list(
         permutation((multispace0, char('|'), multispace0)),
@@ -206,5 +229,12 @@ mod tests {
         let literal = "0 | 1..10";
         let result = range_uint_parse(literal);
         println!("XXX range_uint_multi: {:?}", result);
+    }
+
+    #[test]
+    fn parse_minus_zero() {
+        let literal = "-0";
+        let n = literal.parse::<i64>().unwrap();
+        assert_eq!(n, 0);
     }
 }
