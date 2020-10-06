@@ -16,11 +16,11 @@ fn digit1to9(input: &str) -> IResult<&str, char> {
     one_of("123456789")(input)
 }
 
-pub fn uint_parse(input: &str) -> IResult<&str, &str> {
+fn uint_parse(input: &str) -> IResult<&str, &str> {
     alt((tag("0"), recognize(pair(digit1to9, digit0))))(input)
 }
 
-pub fn int_parse(input: &str) -> IResult<&str, &str> {
+fn int_parse(input: &str) -> IResult<&str, &str> {
     recognize(pair(opt(tag("-")), uint_parse))(input)
 }
 
@@ -42,7 +42,7 @@ where
     }
 }
 
-pub fn range_single_parse<T>(
+fn range_single_parse<T>(
     s: &str,
     digit_parse: fn(&str) -> IResult<&str, &str>,
 ) -> IResult<&str, Range<T>>
@@ -61,7 +61,7 @@ where
     Ok((s, range))
 }
 
-pub fn range_pair_parse<T>(
+fn range_pair_parse<T>(
     s: &str,
     digit_parse: fn(&str) -> IResult<&str, &str>,
 ) -> IResult<&str, Range<T>>
@@ -84,11 +84,11 @@ where
     Ok((s, range))
 }
 
-pub fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
+fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
     range_single_parse::<i64>(s, int_parse)
 }
 
-pub fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
+fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
     range_single_parse::<u64>(s, uint_parse)
 }
 
