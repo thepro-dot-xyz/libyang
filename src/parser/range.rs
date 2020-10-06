@@ -61,14 +61,6 @@ where
     Ok((s, range))
 }
 
-pub fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
-    range_single_parse::<i64>(s, int_parse)
-}
-
-pub fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
-    range_single_parse::<u64>(s, uint_parse)
-}
-
 pub fn range_pair_parse<T>(
     s: &str,
     digit_parse: fn(&str) -> IResult<&str, &str>,
@@ -90,6 +82,14 @@ where
         end: end,
     };
     Ok((s, range))
+}
+
+pub fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
+    range_single_parse::<i64>(s, int_parse)
+}
+
+pub fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
+    range_single_parse::<u64>(s, uint_parse)
 }
 
 fn range_int_pair_parse(s: &str) -> IResult<&str, Range<i64>> {
