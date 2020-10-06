@@ -133,23 +133,43 @@ fn enum_parse(s: &str) -> IResult<&str, Node> {
     Ok((s, Node::EnumNode(Box::new(node))))
 }
 
-fn range_parse(s: &str) -> IResult<&str, (&str, &str)> {
+fn int_range_parse(s: &str) -> IResult<&str, (&str, &str)> {
     let (s, _) = multispace0(s)?;
     let (s, k) = tag("range")(s)?;
     let (s, _) = multispace1(s)?;
     let (s, v) = double_quoted_string(s)?;
+
     let (s, _) = multispace0(s)?;
     let (s, _) = char(';')(s)?;
 
     Ok((s, (k, v)))
 }
 
+fn uint_range_parse(s: &str) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("range")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, v) = double_quoted_string(s)?;
+    let (_, r) = range_uint_parse(v)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char(';')(s)?;
+    Ok((s, Node::RangeUint(Box::new(r))))
+}
+
 fn int_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     let (s, _) = char('{')(s)?;
-    let (s, _) = many0(range_parse)(s)?;
+    let (s, _) = many0(int_range_parse)(s)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = char('}')(s)?;
     Ok((s, vec![]))
+}
+
+fn uint_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
+    let (s, _) = char('{')(s)?;
+    let (s, n) = many0(uint_range_parse)(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, _) = char('}')(s)?;
+    Ok((s, n))
 }
 
 fn pattern_parse(s: &str) -> IResult<&str, (&str, &str)> {
@@ -190,7 +210,7 @@ fn type_sub_parse(s: &str) -> IResult<&str, Vec<Node>> {
     Ok((s, vec![]))
 }
 
-fn type_intx_parse(s: &str, type_string: String, type_kind: TypeKind) -> IResult<&str, Node> {
+fn type_int_parse(s: &str, type_string: String, type_kind: TypeKind) -> IResult<&str, Node> {
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("type")(s)?;
     let (s, _) = multispace1(s)?;
@@ -202,36 +222,50 @@ fn type_intx_parse(s: &str, type_string: String, type_kind: TypeKind) -> IResult
     Ok((s, Node::Type(Box::new(node))))
 }
 
+fn type_uint_parse(s: &str, type_string: String, type_kind: TypeKind) -> IResult<&str, Node> {
+    let (s, _) = multispace0(s)?;
+    let (s, _) = tag("type")(s)?;
+    let (s, _) = multispace1(s)?;
+    let (s, _) = tag(type_string.as_str())(s)?;
+    let (s, _) = multispace0(s)?;
+    let (s, nodes) = alt((uint_sub_parse, semicolon_end_parse))(s)?;
+    for node in nodes {
+        println!("XXX range: {:?}", node);
+    }
+    let node = TypeNode::new(type_kind);
+    Ok((s, Node::Type(Box::new(node))))
+}
+
 fn type_int8_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("int8"), TypeKind::Yint8)
+    type_int_parse(s, String::from("int8"), TypeKind::Yint8)
 }
 
 fn type_int16_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("int16"), TypeKind::Yint16)
+    type_int_parse(s, String::from("int16"), TypeKind::Yint16)
 }
 
 fn type_int32_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("int32"), TypeKind::Yint32)
+    type_int_parse(s, String::from("int32"), TypeKind::Yint32)
 }
 
 fn type_int64_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("int64"), TypeKind::Yint64)
+    type_int_parse(s, String::from("int64"), TypeKind::Yint64)
 }
 
 fn type_uint8_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("uint8"), TypeKind::Yuint8)
+    type_uint_parse(s, String::from("uint8"), TypeKind::Yuint8)
 }
 
 fn type_uint16_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("uint16"), TypeKind::Yuint16)
+    type_uint_parse(s, String::from("uint16"), TypeKind::Yuint16)
 }
 
 fn type_uint32_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("uint32"), TypeKind::Yuint32)
+    type_uint_parse(s, String::from("uint32"), TypeKind::Yuint32)
 }
 
 fn type_uint64_parse(s: &str) -> IResult<&str, Node> {
-    type_intx_parse(s, String::from("uint64"), TypeKind::Yuint64)
+    type_uint_parse(s, String::from("uint64"), TypeKind::Yuint64)
 }
 
 fn type_string_parse(s: &str) -> IResult<&str, Node> {
@@ -439,5 +473,16 @@ mod tests {
         }"#;
         let result = type_identityref_parse(literal);
         println!("XXX test_identityref_parse: {:?}", result);
+    }
+
+    #[test]
+    fn test_uin8_range() {
+        let literal = r#"
+        type uint8 {
+            range "0..63";
+        }"#;
+        let result = type_uint8_parse(literal);
+        println!("test_uint8_parse {:?}", result);
+        // assert_eq!(result, Ok(("hoge", Node::EmptyNode)));
     }
 }

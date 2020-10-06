@@ -18,6 +18,8 @@ pub enum TypeKind {
 pub struct TypeNode {
     pub kind: TypeKind,
     pub name: String,
+    pub range_int: Option<Vec<RangeInt>>,
+    pub range_uint: Option<Vec<RangeUint>>,
 }
 
 impl Default for TypeNode {
@@ -25,6 +27,8 @@ impl Default for TypeNode {
         Self {
             name: String::from(""),
             kind: TypeKind::Ynone,
+            range_int: None,
+            range_uint: None,
         }
     }
 }

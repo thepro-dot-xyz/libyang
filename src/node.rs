@@ -33,4 +33,6 @@ pub enum Node {
     Config(Box<ConfigNode>),
     Units(Box<UnitsNode>),
     Status(Box<StatusNode>),
+    RangeInt(Box<Vec<RangeInt>>),
+    RangeUint(Box<Vec<RangeUint>>),
 }
