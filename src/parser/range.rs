@@ -42,6 +42,28 @@ where
     }
 }
 
+// WIP: generics version of range_single_parse.
+pub fn range_single_parse<T>(s: &str, f: fn(&str) -> IResult<&str, &str>) -> IResult<&str, Range<T>>
+where
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
+    let (s, _) = multispace0(s)?;
+    let (s, r) = alt((tag("min"), tag("max"), f))(s)?;
+    let (_, val) = range_value_parse::<T>(r)?;
+    let (s, _) = multispace0(s)?;
+    let range = Range::<T> {
+        start: val,
+        end: RangeVal::None,
+    };
+    Ok((s, range))
+}
+
+// WIP: wrapper for generic function.
+pub fn range_int_single_parse2(s: &str) -> IResult<&str, Range<i64>> {
+    range_single_parse::<i64>(s, int_parse)
+}
+
 fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
     let (s, _) = multispace0(s)?;
     let (s, r) = alt((tag("min"), tag("max"), int_parse))(s)?;
