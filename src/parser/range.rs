@@ -390,6 +390,11 @@ mod tests {
     fn test_range_uint_parse() {
         let literal = "1 .. 20";
         let result = range_uint_parse(literal);
+        let expect = RangeUint {
+            start: RangeVal::Val(1u64),
+            end: RangeVal::Val(20u64),
+        };
+        assert_eq!(result, Ok(("", vec![expect])));
         println!("{:?}", result);
 
         let literal = "0..20";
