@@ -3,7 +3,9 @@ use crate::parser::*;
 use nom::branch::{alt, permutation};
 use nom::bytes::complete::tag;
 use nom::character::complete::{char, multispace0};
+use nom::error::ErrorKind;
 use nom::multi::separated_nonempty_list;
+use nom::Err::Error;
 use nom::IResult;
 
 fn range_value_parse<T>(s: &str) -> IResult<&str, RangeVal<T>>
@@ -15,8 +17,11 @@ where
         "max" => Ok((s, RangeVal::<T>::Max)),
         "min" => Ok((s, RangeVal::<T>::Min)),
         v => {
-            let n = v.parse::<T>().unwrap();
-            Ok((s, RangeVal::<T>::Val(n)))
+            if let Ok(n) = v.parse::<T>() {
+                Ok((s, RangeVal::<T>::Val(n)))
+            } else {
+                Err(Error((s, ErrorKind::Digit)))
+            }
         }
     }
 }
@@ -96,8 +101,6 @@ pub fn range_uint_parse(s: &str) -> IResult<&str, Vec<RangeUint>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nom::error::ErrorKind;
-    use nom::Err::Error;
 
     #[test]
     fn test_range_value_parse() {
