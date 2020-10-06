@@ -125,17 +125,8 @@ pub struct Range<T> {
     pub end: RangeVal<T>,
 }
 
-#[derive(Debug, PartialEq)]
-pub struct RangeInt {
-    pub start: RangeVal<i64>,
-    pub end: RangeVal<i64>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct RangeUint {
-    pub start: RangeVal<u64>,
-    pub end: RangeVal<u64>,
-}
+pub type RangeInt = Range<i64>;
+pub type RangeUint = Range<u64>;
 
 #[derive(Debug, PartialEq)]
 pub struct RangeIntNode {

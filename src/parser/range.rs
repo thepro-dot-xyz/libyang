@@ -60,7 +60,7 @@ where
 }
 
 // WIP: wrapper for generic function.
-pub fn range_int_single_parse2(s: &str) -> IResult<&str, Range<i64>> {
+pub fn range_int_single_parse2(s: &str) -> IResult<&str, RangeInt> {
     range_single_parse::<i64>(s, int_parse)
 }
 
