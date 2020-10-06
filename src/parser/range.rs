@@ -118,14 +118,27 @@ pub fn range_uint_parse(s: &str) -> IResult<&str, Vec<RangeUint>> {
 mod tests {
     use super::*;
 
-    // "range" has digit, "min", "max" as <value> statement. Range can be
-    // specified <value>..<value> or just simple <value>. We can have
-    // multiple range with separating pipe
-    // <value>..<value>|<value>..<value>. So "range" can have multiple set
-    // of range. When type is inherited, range must be more specific than
-    // parent type range. Following example from RFC7951 shows illegal range
-    // specification when it inherit range from parent.
-
+    // RFC7951
+    //
+    // 9.2.4.  The "range" Statement
+    //
+    // The "range" statement, which is an optional substatement to the "type"
+    // statement, takes as an argument a range expression string. It is used to
+    // restrict integer and decimal built-in types, or types derived from them.
+    //
+    // A range consists of an explicit value, or a lower-inclusive bound, two
+    // consecutive dots "..", and an upper-inclusive bound. Multiple values or
+    // ranges can be given, separated by "|". If multiple values or ranges are
+    // given, they all MUST be disjoint and MUST be in ascending order. If a
+    // range restriction is applied to a type that is already range-restricted,
+    // the new restriction MUST be equally limiting or more limiting, i.e.,
+    // raising the lower bounds, reducing the upper bounds, removing explicit
+    // values or ranges, or splitting ranges into multiple ranges with
+    // intermediate gaps. Each explicit value and range boundary value given in
+    // the range expression MUST match the type being restricted or be one of
+    // the special values "min" or "max". "min" and "max" mean the minimum and
+    // maximum values accepted for the type being restricted, respectively.
+    //
     // 9.2.5.  Usage Example
     //
     // typedef my-base-int32-type {
@@ -233,17 +246,32 @@ mod tests {
 
     #[test]
     fn test_range_value_parse() {
-        let literal = "100";
-        let result = range_value_parse::<i64>(literal);
-        println!("{:?}", result);
-
-        let literal = "-0";
-        let result = range_value_parse::<i64>(literal);
-        println!("{:?}", result);
-
-        let literal = "-1";
-        let result = range_value_parse::<i64>(literal);
-        println!("{:?}", result);
+        struct Test {
+            input: &'static str,
+            output: IResult<&'static str, RangeVal<i64>>,
+        };
+        let tests = [
+            Test {
+                input: "100",
+                output: Ok(("100", RangeVal::<i64>::Val(100))),
+            },
+            Test {
+                input: "-0",
+                output: Ok(("-0", RangeVal::<i64>::Val(0))),
+            },
+            Test {
+                input: "-1",
+                output: Ok(("-1", RangeVal::<i64>::Val(-1))),
+            },
+            Test {
+                input: "max",
+                output: Ok(("max", RangeVal::<i64>::Max)),
+            },
+        ];
+        for t in &tests {
+            let result = range_value_parse::<i64>(t.input);
+            assert_eq!(result, t.output);
+        }
     }
 
     #[test]
@@ -304,61 +332,58 @@ mod tests {
 
     #[test]
     fn test_range_uint_pair_parse() {
-        let literal = "0..1";
-        let result = range_uint_parse(literal);
-        let expect = RangeUint {
-            start: RangeVal::Val(0u64),
-            end: RangeVal::Val(1u64),
+        struct Test {
+            input: &'static str,
+            output: IResult<&'static str, RangeUint>,
         };
-        assert_eq!(result, Ok(("", vec![expect])));
-
-        let literal = "1..100";
-        let result = range_uint_parse(literal);
-        let expect = RangeUint {
-            start: RangeVal::Val(1u64),
-            end: RangeVal::Val(100u64),
-        };
-        assert_eq!(result, Ok(("", vec![expect])));
-
-        // We interpret start > end as valid statement. Although it won't match
-        // to any value.
-        let literal = "100..1";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-
-        let literal = "-0..1";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-
-        let literal = "-1..1";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-
-        let literal = "-100..-1";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-    }
-
-    #[test]
-    fn test_range_uint_multi_parse() {
-        let literal = "1..20 | 22..24";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-
-        let literal = "1..20 | 22..24 | 35..100";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-
-        let literal = "0 | 1..10";
-        let result = range_uint_parse(literal);
-        println!("XXX range_uint_multi: {:?}", result);
-    }
-
-    #[test]
-    fn parse_minus_zero() {
-        let literal = "-0";
-        let n = literal.parse::<i64>().unwrap();
-        assert_eq!(n, 0);
+        let tests = [
+            Test {
+                input: "0..1",
+                output: Ok((
+                    "",
+                    RangeUint {
+                        start: RangeVal::Val(0u64),
+                        end: RangeVal::Val(1u64),
+                    },
+                )),
+            },
+            Test {
+                input: "1..100",
+                output: Ok((
+                    "",
+                    RangeUint {
+                        start: RangeVal::Val(1u64),
+                        end: RangeVal::Val(100u64),
+                    },
+                )),
+            },
+            Test {
+                input: "100..1",
+                output: Ok((
+                    "",
+                    RangeUint {
+                        start: RangeVal::Val(100u64),
+                        end: RangeVal::Val(1u64),
+                    },
+                )),
+            },
+            Test {
+                input: "-0..1",
+                output: Err(Error(("-0..1", ErrorKind::OneOf))),
+            },
+            Test {
+                input: "-1..1",
+                output: Err(Error(("-1..1", ErrorKind::OneOf))),
+            },
+            Test {
+                input: "100..-1",
+                output: Err(Error(("-1", ErrorKind::OneOf))),
+            },
+        ];
+        for t in &tests {
+            let result = range_uint_pair_parse(t.input);
+            assert_eq!(result, t.output);
+        }
     }
 
     #[test]
@@ -383,13 +408,44 @@ mod tests {
         let result = range_uint_parse(literal);
         println!("{:?}", result);
 
+        let literal = "68..max";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
         let literal = "min..max";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "min";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "1..20 | 22..24";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "1..20 | 22..24 | 35..100";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "0 | 1..10 | max";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "0 | 30..65535";
+        let result = range_uint_parse(literal);
+        println!("{:?}", result);
+
+        let literal = "1..14 | 36 | 40 | 44| 48 | 52 | 56 | 60 | 64 | 100 | 104 | 108 | 112 | 116 | 120 | 124 | 128 | 132 | 136 | 140 | 144 | 149 | 153 | 157 | 161 | 165";
         let result = range_uint_parse(literal);
         println!("{:?}", result);
     }
 
-    // let literal = "0..1";
-    // range "0 | 30..65535";
-    // range "1..14 | 36 | 40 | 44| 48 | 52 | 56 | 60 | 64 | 100 | 104 | 108 | 112 | 116 | 120 | 124 | 128 | 132 | 136 | 140 | 144 | 149 | 153 | 157 | 161 | 165";
-    // range "68..max";
+    #[test]
+    fn parse_minus_zero() {
+        // minus zero is valid for integer value.
+        let literal = "-0";
+        let n = literal.parse::<i64>().unwrap();
+        assert_eq!(n, 0);
+    }
 }
