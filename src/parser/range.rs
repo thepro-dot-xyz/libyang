@@ -6,24 +6,17 @@ use nom::character::complete::{char, multispace0};
 use nom::multi::separated_nonempty_list;
 use nom::IResult;
 
-pub fn int_value_parse(s: &str) -> IResult<&str, RangeVal<i64>> {
+fn range_value_parse<T>(s: &str) -> IResult<&str, RangeVal<T>>
+where
+    T: std::str::FromStr,
+    <T as std::str::FromStr>::Err: std::fmt::Debug,
+{
     match s {
-        "max" => Ok((s, RangeVal::<i64>::Max)),
-        "min" => Ok((s, RangeVal::<i64>::Min)),
+        "max" => Ok((s, RangeVal::<T>::Max)),
+        "min" => Ok((s, RangeVal::<T>::Min)),
         v => {
-            let n = v.parse::<i64>().unwrap();
-            Ok((s, RangeVal::<i64>::Val(n)))
-        }
-    }
-}
-
-fn uint_value_parse(s: &str) -> IResult<&str, RangeVal<u64>> {
-    match s {
-        "max" => Ok((s, RangeVal::<u64>::Max)),
-        "min" => Ok((s, RangeVal::<u64>::Min)),
-        v => {
-            let n = v.parse::<u64>().unwrap();
-            Ok((s, RangeVal::<u64>::Val(n)))
+            let n = v.parse::<T>().unwrap();
+            Ok((s, RangeVal::<T>::Val(n)))
         }
     }
 }
@@ -31,7 +24,7 @@ fn uint_value_parse(s: &str) -> IResult<&str, RangeVal<u64>> {
 fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
     let (s, _) = multispace0(s)?;
     let (s, r) = alt((tag("min"), tag("max"), int_parse))(s)?;
-    let (_, val) = int_value_parse(r)?;
+    let (_, val) = range_value_parse::<i64>(r)?;
     let (s, _) = multispace0(s)?;
     let range = RangeInt {
         start: val,
@@ -43,7 +36,7 @@ fn range_int_single_parse(s: &str) -> IResult<&str, RangeInt> {
 fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
     let (s, _) = multispace0(s)?;
     let (s, r) = alt((tag("min"), tag("max"), uint_parse))(s)?;
-    let (_, val) = uint_value_parse(r)?;
+    let (_, val) = range_value_parse::<u64>(r)?;
     let (s, _) = multispace0(s)?;
     let range = RangeUint {
         start: val,
@@ -56,12 +49,12 @@ fn range_uint_single_parse(s: &str) -> IResult<&str, RangeUint> {
 fn range_int_pair_parse(s: &str) -> IResult<&str, RangeInt> {
     let (s, _) = multispace0(s)?;
     let (s, r1) = alt((tag("min"), int_parse))(s)?;
-    let (_, start) = int_value_parse(r1)?;
+    let (_, start) = range_value_parse::<i64>(r1)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("..")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, r2) = alt((tag("max"), int_parse))(s)?;
-    let (_, end) = int_value_parse(r2)?;
+    let (_, end) = range_value_parse::<i64>(r2)?;
     let range = RangeInt {
         start: start,
         end: end,
@@ -72,12 +65,12 @@ fn range_int_pair_parse(s: &str) -> IResult<&str, RangeInt> {
 fn range_uint_pair_parse(s: &str) -> IResult<&str, RangeUint> {
     let (s, _) = multispace0(s)?;
     let (s, r1) = alt((tag("min"), uint_parse))(s)?;
-    let (_, start) = uint_value_parse(r1)?;
+    let (_, start) = range_value_parse::<u64>(r1)?;
     let (s, _) = multispace0(s)?;
     let (s, _) = tag("..")(s)?;
     let (s, _) = multispace0(s)?;
     let (s, r2) = alt((tag("max"), uint_parse))(s)?;
-    let (_, end) = uint_value_parse(r2)?;
+    let (_, end) = range_value_parse::<u64>(r2)?;
     let range = RangeUint {
         start: start,
         end: end,
@@ -109,17 +102,17 @@ mod tests {
     use nom::Err::Error;
 
     #[test]
-    fn test_range_int_single_parse() {
+    fn test_range_value_parse() {
         let literal = "100";
-        let result = int_value_parse(literal);
+        let result = range_value_parse::<i64>(literal);
         println!("{:?}", result);
 
         let literal = "-0";
-        let result = int_value_parse(literal);
+        let result = range_value_parse::<i64>(literal);
         println!("{:?}", result);
 
         let literal = "-1";
-        let result = int_value_parse(literal);
+        let result = range_value_parse::<i64>(literal);
         println!("{:?}", result);
     }
 
