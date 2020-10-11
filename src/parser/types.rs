@@ -445,9 +445,10 @@ pub fn types_parse(s: &str) -> IResult<&str, Node> {
 }
 
 // WIP for range match function.
-fn match_uint_range_node(n: u64, range: &Vec<RangeUint>) -> bool {
+fn match_uint_range_node(range: &Vec<RangeUint>, n: u64) -> bool {
     for r in range {
         if r.end == RangeVal::<u64>::None {
+            // Only start exists.
             let start = match r.start {
                 RangeVal::<u64>::Val(v) => v,
                 RangeVal::<u64>::Min => 0,
@@ -456,6 +457,26 @@ fn match_uint_range_node(n: u64, range: &Vec<RangeUint>) -> bool {
             };
             if n == start {
                 return true;
+            } else {
+                return false;
+            }
+        } else {
+            let start = match r.start {
+                RangeVal::<u64>::Val(v) => v,
+                RangeVal::<u64>::Min => 0,
+                RangeVal::<u64>::Max => 0,
+                _ => 0,
+            };
+            let end = match r.end {
+                RangeVal::<u64>::Val(v) => v,
+                RangeVal::<u64>::Min => 0,
+                RangeVal::<u64>::Max => 0,
+                _ => 0,
+            };
+            if start <= n && n <= end {
+                return true;
+            } else {
+                return false;
             }
         }
     }
@@ -463,16 +484,16 @@ fn match_uint_range_node(n: u64, range: &Vec<RangeUint>) -> bool {
 }
 
 // WIP for match function.
-pub fn match_node(s: &str, node: &TypeNode) -> bool {
+pub fn match_node(node: &TypeNode, s: &str) -> bool {
     if node.kind != TypeKind::Yuint8 {
         return false;
     }
     if let Ok(v) = s.parse::<u64>() {
         if let Some(range) = &node.range_uint {
-            return match_uint_range_node(v, &range);
+            return match_uint_range_node(&range, v);
         } else {
             // TODO Type value range check.
-            return true;
+            return false;
         }
     } else {
         return false;
@@ -521,8 +542,13 @@ mod tests {
         type uint8 {
             range "0..63";
         }"#;
-        let result = type_uint8_parse(literal);
-        println!("test_uint8_parse {:?}", result);
-        // assert_eq!(result, Ok(("hoge", Node::EmptyNode)));
+        let (_, result) = type_uint8_parse(literal).unwrap();
+        match result {
+            Node::Type(t) => {
+                println!("test_uint8_parse {:?}", t);
+                assert_eq!(match_node(&t, "10"), true);
+            }
+            _ => {}
+        }
     }
 }
