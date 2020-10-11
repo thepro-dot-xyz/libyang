@@ -77,10 +77,7 @@ where
     let (s, _) = multispace0(s)?;
     let (s, r2) = alt((tag("max"), digit_parse))(s)?;
     let (_, end) = range_value_parse::<T>(r2)?;
-    let range = Range::<T> {
-        start: start,
-        end: end,
-    };
+    let range = Range::<T> { start, end };
     Ok((s, range))
 }
 
